@@ -1,7 +1,12 @@
 name: refresh
 
-# Pull Hyros, rebuild the redacted page, deploy it to Pages, then start the next run
-# thirty minutes on.
+# Pull Hyros, rebuild the redacted page, deploy it to Pages. ON DEMAND ONLY.
+#
+# There is no schedule and no self-dispatching chain: the dashboard refreshes when
+# somebody asks it to. serve.py's Refresh button dispatches this workflow after it
+# rebuilds locally, so one press updates both copies. It can also be run from the
+# Actions tab or with:
+#   gh workflow run refresh.yml -R gostrategicmarketing-deployment/sts-fall-summit-2026
 #
 # The Hyros credential lives only in Actions Secrets (HYROS_API_KEY). It reaches pull.py
 # as an environment variable and never touches the repo or the published page.
@@ -15,20 +20,7 @@ name: refresh
 #   - Only data/daily.json is committed back, and it is dates and totals only.
 
 on:
-  # THE SCHEDULE IS THE CHAIN AT THE FOOT OF THIS JOB, NOT THIS CRON.
-  # Scheduled events on free public repos are best-effort and are routinely shed on this
-  # account (measured on the PBI repo: whole nights lost). workflow_dispatch is API-driven
-  # and fires every time, so each run starts its own successor. The cron below is only a
-  # way back in if that chain is ever broken.
-  schedule:
-    - cron: "13,43 * * * *"
-
   workflow_dispatch:
-    inputs:
-      chain:
-        description: Start the next run 30 minutes after this one
-        type: boolean
-        default: true
 
   push:
     branches: [main]
@@ -43,7 +35,6 @@ permissions:
   contents: write   # commit data/daily.json only
   pages: write
   id-token: write
-  actions: write    # dispatch the next link of the chain
 
 # One refresh at a time, and never cancel a deploy mid-flight.
 concurrency:
@@ -156,11 +147,3 @@ jobs:
           git add -f data/daily.json
           git diff --staged --quiet || git commit -m "daily history $(date -u +%Y-%m-%dT%H:%MZ)"
           git push || true
-
-      - name: Start the next run
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.chain }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          sleep 1740   # 29 minutes; the run itself takes the balance of the half hour
-          gh workflow run refresh.yml -R "${{ github.repository }}" -f chain=true

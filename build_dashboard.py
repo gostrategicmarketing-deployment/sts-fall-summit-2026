@@ -642,6 +642,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     </button>
     <span id="rbErr" class="rb-err" hidden></span>
     <b>Pulled {esc(M["pulled_at"])}</b>
+    Times are the ad account's<br>
     Source: Hyros<br>
     Sales credit: summit tag<br>
     Spend and clicks: last click
@@ -816,15 +817,16 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <div class="mcard mcard-refresh">
       <h3>Refreshing this page</h3>
       {"".join([
-        "<p>This page rebuilds itself from Hyros every 30 minutes. Nothing to press and nobody to ask: "
-        "a scheduled job re-pulls the account, rebuilds and republishes here.</p>"
-        "<p>The timestamp above is the pull it was built from.</p>"
+        "<p>This copy is rebuilt on request, not on a timer. Someone with the dashboard open "
+        "presses Refresh, which re-pulls Hyros and rebuilds this page a couple of minutes later.</p>"
+        "<p>The timestamp above is the pull it was built from, in the ad account's time zone.</p>"
       ]) if REDACT else "".join([
         "<p>Two ways, neither of which needs Claude:</p>",
         "<p><b>Locally, right now.</b> Double-click <span class='askline'>Fall Summit Dashboard.command</span> "
         "and press Refresh on the page. It re-pulls Hyros and rebuilds in one click.</p>",
-        "<p><b>The shared copy</b> at <span class='askline'>gostrategicmarketing-deployment.github.io/sts-fall-summit-2026/</span> "
-        "rebuilds itself from Hyros every 30 minutes through GitHub Actions, with buyer names redacted.</p>",
+        "<p>The same press also rebuilds <b>the shared copy</b> at "
+        "<span class='askline'>gostrategicmarketing-deployment.github.io/sts-fall-summit-2026/</span>, "
+        "with buyer names redacted. Nothing runs on a timer.</p>",
       ])}
     </div>
     <div class="mcard">

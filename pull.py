@@ -204,6 +204,21 @@ def _norm_date(v):
 ACCOUNT_TZ = "America/Los_Angeles"
 
 
+def account_now():
+    """Wall clock in the account's timezone, labelled.
+
+    pulled_at used to be dt.datetime.now(), i.e. the builder's local clock: UTC when
+    GitHub built the page, Eastern when the button did. The same field meant different
+    things on the two copies, and neither matched the Pacific day the figures are
+    scoped to. Stamping it in the account timezone makes it mean one thing everywhere.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        return dt.datetime.now(ZoneInfo(ACCOUNT_TZ)).strftime("%Y-%m-%d %H:%M %Z")
+    except Exception:
+        return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+
 def account_today():
     try:
         from zoneinfo import ZoneInfo
@@ -368,7 +383,7 @@ def main():
 
     meta = dict(prev.get("meta") or {})
     meta.update({
-        "pulled_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "pulled_at": account_now(),
         "source": "Hyros REST API (School of Traditional Skills account)",
         "tag_filter": TAG, "attribution_model": "LAST_CLICK",
         "source_configuration": "ALL_SOURCES",
