@@ -240,17 +240,7 @@ def main():
         raise SystemExit("No summit ad sets found. Campaign naming may have changed.")
 
     print("pulling attribution...")
-    as_run = attribution(list(adsets), "facebook_adset", first_day, today)
     ad_run = attribution(list(ads), "facebook_ad", first_day, today)
-
-    # Two windows, always. first_day..today is the running total; today..today is
-    # today. Deriving one from the other is what produced identical decks: the
-    # cumulative pull was being filed as the day row.
-    if today == first_day:
-        as_day = as_run
-    else:
-        print("pulling today's attribution...")
-        as_day = attribution(list(adsets), "facebook_adset", today, today)
 
     print("pulling tagged leads...")
     lead_rows, leads_per_ad, leads_per_day, paid = tagged_leads()
@@ -270,6 +260,61 @@ def main():
     if missing:
         raise SystemExit("ads hold tagged leads but were not discovered: "
                          + ", ".join(f"{m} ({leads_per_ad[m]})" for m in missing))
+
+    # Every day row is rebuilt from its own pull, never appended and frozen. A row
+    # written mid-afternoon is only a snapshot: on 2026-09-08 the stored 2026-09-07
+    # row still read $80.82 while the settled day was $105.82, a quarter short. The
+    # window also starts at the earliest ad-attributed lead, not at first_spend_day,
+    # because a few tagged leads landed before Hyros recorded any spend and would
+    # otherwise belong to no day at all.
+    def day_row(day, attr):
+        led = [s for s in ledger if s["date"] == day and s["ad"] != "n/a"]
+        return {
+            "date": day,
+            "spend": round(sum(x.get("spend", 0.0) for x in attr.values()), 2),
+            "clicks": sum(x.get("clicks", 0) for x in attr.values()),
+            "impressions": sum(x.get("impressions", 0) for x in attr.values()),
+            "leads": sum(n for aid, n in leads_per_day.get(day, {}).items() if aid in ads),
+            "purchases": len(led),
+            "revenue": round(sum(s["amount"] for s in led), 2),
+        }
+
+    lead_days = {d for d, per in leads_per_day.items()
+                 if d and any(aid in ads for aid in per)}
+    span_start = min([first_day] + sorted(lead_days))
+    days = []
+    cur = dt.date.fromisoformat(span_start)
+    end = dt.date.fromisoformat(today)
+    while cur <= end:
+        days.append(cur.isoformat())
+        cur += dt.timedelta(days=1)
+
+    # One sweep, one moment. The running total is the sum of these day pulls rather
+    # than a separate first_day..today call: pulling them independently meant the two
+    # were measured minutes apart, and on a day accruing a few hundred dollars the
+    # running total could read LOWER than today, which is what the live page showed.
+    print(f"pulling {len(days)} day windows ({days[0]} to {days[-1]})...")
+    daily, per_day_attr = [], {}
+    for day in days:
+        per_day_attr[day] = attribution(list(adsets), "facebook_adset", day, day)
+        row = day_row(day, per_day_attr[day])
+        if row["spend"] or row["clicks"] or row["leads"] or row["purchases"]:
+            daily.append(row)
+    today_row = next((r for r in daily if r["date"] == today),
+                     day_row(today, per_day_attr.get(today, {})))
+
+    as_day = per_day_attr.get(today, {})
+    as_run = {}
+    for attr in per_day_attr.values():
+        for aid, m in attr.items():
+            acc = as_run.setdefault(aid, {"spend": 0.0, "clicks": 0, "impressions": 0, "leads": 0})
+            acc["spend"] += m.get("spend", 0.0)
+            acc["clicks"] += m.get("clicks", 0)
+            acc["impressions"] += m.get("impressions", 0)
+            acc["leads"] += m.get("leads", 0)
+    for m in as_run.values():
+        m["spend"] = round(m["spend"], 2)
+
 
     ad_rows = []
     for aid, meta in ads.items():
@@ -304,45 +349,6 @@ def main():
         })
 
     total_spend = round(sum(c["spend"] for c in camp_rows), 2)
-
-    # Every day row is rebuilt from its own pull, never appended and frozen. A row
-    # written mid-afternoon is only a snapshot: on 2026-09-08 the stored 2026-09-07
-    # row still read $80.82 while the settled day was $105.82, a quarter short. The
-    # window also starts at the earliest ad-attributed lead, not at first_spend_day,
-    # because a few tagged leads landed before Hyros recorded any spend and would
-    # otherwise belong to no day at all.
-    def day_row(day, attr):
-        led = [s for s in ledger if s["date"] == day and s["ad"] != "n/a"]
-        return {
-            "date": day,
-            "spend": round(sum(x.get("spend", 0.0) for x in attr.values()), 2),
-            "clicks": sum(x.get("clicks", 0) for x in attr.values()),
-            "impressions": sum(x.get("impressions", 0) for x in attr.values()),
-            "leads": sum(n for aid, n in leads_per_day.get(day, {}).items() if aid in ads),
-            "purchases": len(led),
-            "revenue": round(sum(s["amount"] for s in led), 2),
-        }
-
-    lead_days = {d for d, per in leads_per_day.items()
-                 if d and any(aid in ads for aid in per)}
-    span_start = min([first_day] + sorted(lead_days))
-    days = []
-    cur = dt.date.fromisoformat(span_start)
-    end = dt.date.fromisoformat(today)
-    while cur <= end:
-        days.append(cur.isoformat())
-        cur += dt.timedelta(days=1)
-
-    print(f"pulling {len(days)} day windows ({days[0]} to {days[-1]})...")
-    daily = []
-    for day in days:
-        attr = as_day if day == today and today != first_day else (
-            as_run if (day == today and today == first_day) else
-            attribution(list(adsets), "facebook_adset", day, day))
-        row = day_row(day, attr)
-        if row["spend"] or row["clicks"] or row["leads"] or row["purchases"]:
-            daily.append(row)
-    today_row = next((r for r in daily if r["date"] == today), day_row(today, as_day))
 
     daily_p = DATA / "daily.json"
     daily_p.write_text(json.dumps(daily, indent=2))

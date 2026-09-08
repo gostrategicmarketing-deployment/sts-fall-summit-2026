@@ -355,7 +355,10 @@ if M.get("note_running_equals_today"):
                    f'{esc(M["first_spend_day"])}, so <b>Just Today and Running Total are the same '
                    f'numbers today</b>. They separate from tomorrow onward.{_idle_sentence}')
 else:
-    notice_html = (f'<b>Day {len(DAILY)} of delivery.</b> <b>Just Today</b> is '
+    # Days of DELIVERY, not rows: daily.json also carries lead-only days from before
+    # any spend was recorded, and counting those overstated the campaign's age.
+    _delivery_days = sum(1 for d in DAILY if d.get("spend", 0) > 0)
+    notice_html = (f'<b>Day {_delivery_days} of delivery.</b> <b>Just Today</b> is '
                    f'{esc(M["window_end"])} on its own, midnight to now in the account time zone. '
                    f'<b>Running Total</b> covers {esc(M["first_spend_day"])} to '
                    f'{esc(M["window_end"])}, every day the Fall Summit campaigns have '
