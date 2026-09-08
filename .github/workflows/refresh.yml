@@ -82,11 +82,36 @@ jobs:
         env:
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
         run: |
+          # continue-on-error reports this step's `conclusion` as success even when it
+          # fails, so the banners below are the only honest signal. Grep for PREVIEWS.
           if [ -z "$FB_TOKEN" ]; then
-            echo "No FB_TOKEN secret; publishing with the previews already committed."
-          else
-            python3 fetch_creatives.py
+            echo "PREVIEWS SKIPPED: no FB_TOKEN secret; publishing what is committed."
+            exit 0
           fi
+          # fetch_creatives.py resizes with Pillow, which the runner does not ship.
+          # Without this the step failed at import and the failure was invisible.
+          python3 -m pip install --quiet --disable-pip-version-check pillow
+          if python3 fetch_creatives.py; then
+            echo "PREVIEWS OK"
+          else
+            echo "PREVIEWS FAILED (numbers still publish; ads render a neutral tile)"
+          fi
+
+      - name: Report preview coverage
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          d = json.loads(pathlib.Path("data/dashboard_data.json").read_text())
+          a = json.loads(pathlib.Path("data/creative_assets.json").read_text())
+          rank = lambda x: (-x["leads"], x["spend"] if x["leads"] else 1e9, -x["impressions"])
+          shown = {x["id"] for x in sorted([y for y in d["ads"] if y["type"]=="image"], key=rank)[:10]}
+          shown |= {x["id"] for x in sorted([y for y in d["ads"] if y["type"]=="video"], key=rank)[:3]}
+          shown |= {x["id"] for x in d["ads"] if x["purchases"]}
+          missing = shown - set(a)
+          print(f"PREVIEW COVERAGE {len(shown)-len(missing)}/{len(shown)} rendered ads have an image")
+          if missing:
+              print("::warning::previews missing for " + ", ".join(sorted(missing)[:8]))
+          PY
 
       - name: Build the redacted page
         run: python3 build_dashboard.py --redact --out index.html
