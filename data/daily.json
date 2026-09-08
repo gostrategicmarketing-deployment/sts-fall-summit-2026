@@ -7,5 +7,14 @@
     "leads": 137,
     "purchases": 4,
     "revenue": 85.0
+  },
+  {
+    "date": "2026-09-08",
+    "spend": 105.87,
+    "clicks": 354,
+    "impressions": 12076,
+    "leads": 137,
+    "purchases": 4,
+    "revenue": 85.0
   }
 ]
