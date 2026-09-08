@@ -366,7 +366,8 @@ else:
 
 NOINDEX = ('<meta name="robots" content="noindex, nofollow">\n' if REDACT else "")
 
-PAGE = f"""{NOINDEX}<title>Fall Summit 2026 Acquisition Board</title>
+PAGE = f"""<meta charset="utf-8">
+{NOINDEX}<title>Fall Summit 2026 Acquisition Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IM+Fell+Great+Primer:ital@0;1&display=swap">
@@ -438,6 +439,35 @@ h1,h2,h3 {{ font-family:var(--f-display); font-weight:400; text-wrap:balance; ma
 @keyframes rbpulse {{ 0%,100% {{ opacity:1; }} 50% {{ opacity:.25; }} }}
 .rb-err {{ display:block; font-size:11.5px; color:var(--bad); max-width:34ch;
   margin-bottom:8px; text-align:right; }}
+
+/* ---- refresh progress ---- */
+/* A 21-second wait needs more than a pulsing dot. The bar advances stage by stage and
+   creeps within a stage, so it never looks stalled; the decks dim so it is obvious the
+   figures on screen are the old ones until the reload lands. */
+#rbBar {{ position:fixed; top:0; left:0; height:3px; width:0; z-index:60;
+  background:linear-gradient(90deg, var(--sun-deep), var(--sun));
+  box-shadow:0 0 10px rgba(233,178,66,.7); opacity:0;
+  transition:width .45s cubic-bezier(.22,.61,.36,1), opacity .25s ease; }}
+body.is-refreshing #rbBar {{ opacity:1; }}
+body.is-refreshing .deck .kpi-val,
+body.is-refreshing .funnel .fn-val {{ opacity:.38; transition:opacity .3s ease; }}
+body.is-refreshing .deck-today {{ position:relative; overflow:hidden; }}
+body.is-refreshing .deck-today::after {{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(100deg, transparent 20%, rgba(233,178,66,.13) 50%, transparent 80%);
+  background-size:220% 100%; animation:rbsweep 1.5s linear infinite; }}
+@keyframes rbsweep {{ from {{ background-position:120% 0; }} to {{ background-position:-120% 0; }} }}
+.rb-ring {{ width:12px; height:12px; flex:0 0 auto; border-radius:50%;
+  border:2px solid rgba(53,56,63,.28); border-top-color:var(--ink);
+  animation:rbspin .7s linear infinite; display:none; }}
+.refresh-btn[disabled] .rb-ring {{ display:block; }}
+.refresh-btn[disabled] .rb-dot {{ display:none; }}
+@keyframes rbspin {{ to {{ transform:rotate(360deg); }} }}
+@media (prefers-reduced-motion: reduce) {{
+  .rb-ring {{ animation:none; border-top-color:var(--ink); }}
+  body.is-refreshing .deck-today::after {{ animation:none; }}
+  #rbBar {{ transition:opacity .2s ease; }}
+}}
 .tagchip {{ display:inline-block; font-family:var(--f-mono); font-size:12px;
   background:var(--sun); color:#2A2206; padding:3px 9px; border-radius:3px; font-weight:600; }}
 
@@ -628,6 +658,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   font-size:12px; color:var(--text-3); display:flex; flex-wrap:wrap; gap:8px 20px; }}
 </style>
 
+<div id="rbBar" role="progressbar" aria-label="Refresh progress" aria-hidden="true"></div>
 <div class="wrap">
 <header class="mast">
   <div>
@@ -638,7 +669,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </div>
   <div class="stamp">
     <button type="button" id="refreshBtn" class="refresh-btn" hidden>
-      <span class="rb-dot"></span><span id="rbLabel">Refresh</span>
+      <span class="rb-dot"></span><span class="rb-ring" aria-hidden="true"></span><span id="rbLabel">Refresh</span>
     </button>
     <span id="rbErr" class="rb-err" hidden></span>
     <b>Pulled {esc(M["pulled_at"])}</b>
@@ -850,7 +881,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 <footer>
   <span>School of Traditional Skills and Traditional Skills Academy</span>
   <span>Data pulled {esc(M["pulled_at"])} from the Hyros MCP</span>
-  <span>To update, ask Claude to refresh the Fall Summit dashboard</span>
+  <span>Press Refresh to re-pull Hyros; nothing runs on a timer</span>
   <span>Rebuild locally: <code class="seq">python3 build_dashboard.py</code></span>
 </footer>
 </div>
@@ -911,12 +942,51 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   var local = ['localhost', '127.0.0.1', '::1'].indexOf(location.hostname) !== -1;
   var btn = document.getElementById('refreshBtn'),
       label = document.getElementById('rbLabel'),
-      err = document.getElementById('rbErr');
+      err = document.getElementById('rbErr'),
+      bar = document.getElementById('rbBar');
   if (!local || !btn) return;
   btn.hidden = false;
 
-  function fail(m) {{
+  // Where the bar sits when each stage begins, weighted by how long each actually
+  // takes: the Hyros pull is about two thirds of the wall clock, the rebuild most of
+  // the rest. Within a stage the bar creeps toward the next mark so it never freezes.
+  var MARKS = {{
+    'Starting': 4,
+    'Pulling Hyros': 8,
+    'Refreshing previews': 66,
+    'Rebuilding the page': 74,
+    'Publishing the shared copy': 94
+  }};
+  var NEXT = {{
+    'Starting': 8,
+    'Pulling Hyros': 66,
+    'Refreshing previews': 74,
+    'Rebuilding the page': 94,
+    'Publishing the shared copy': 99
+  }};
+  var pct = 0, creep = null;
+
+  function draw(p) {{ pct = Math.max(pct, Math.min(p, 99.5)); bar.style.width = pct + '%'; }}
+
+  function stageTo(stage) {{
+    var from = MARKS[stage], to = NEXT[stage];
+    if (from === undefined) return;
+    draw(from);
+    clearInterval(creep);
+    // Asymptotic creep: fast at first, never quite reaching the next mark.
+    creep = setInterval(function () {{ draw(pct + (to - pct) * 0.06); }}, 400);
+  }}
+
+  function stop() {{
+    clearInterval(creep);
+    creep = null;
+    document.body.classList.remove('is-refreshing');
     btn.disabled = false;
+  }}
+
+  function fail(m) {{
+    stop();
+    bar.style.width = '0';
     label.textContent = 'Refresh';
     err.textContent = m;
     err.hidden = false;
@@ -927,15 +997,20 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       .then(function (r) {{ return r.json(); }})
       .then(function (s) {{
         if (s.running) {{
+          stageTo(s.stage);
           label.textContent = (s.stage || 'Working') + '\u2026 ' + Math.round(s.elapsed) + 's';
-          setTimeout(poll, 700);
+          setTimeout(poll, 600);
           return;
         }}
         if (s.error) {{ fail(s.error); return; }}
+        clearInterval(creep);
+        bar.style.width = '100%';
         label.textContent = 'Reloading\u2026';
-        // Cache-bust: a plain reload can be served from cache and then the page looks
+        // Cache-bust: a plain reload can be served from cache, and then the page looks
         // unchanged even though it was just rebuilt.
-        location.replace(location.pathname + '?t=' + Date.now());
+        setTimeout(function () {{
+          location.replace(location.pathname + '?t=' + Date.now());
+        }}, 300);
       }})
       .catch(function (e) {{ fail(e.message || String(e)); }});
   }}
@@ -943,10 +1018,13 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   btn.addEventListener('click', function () {{
     btn.disabled = true;
     err.hidden = true;
+    pct = 0;
+    document.body.classList.add('is-refreshing');
+    stageTo('Starting');
     label.textContent = 'Starting\u2026';
     fetch('/refresh', {{ method: 'POST', cache: 'no-store' }})
       .then(function (r) {{ if (!r.ok && r.status !== 409) throw new Error('HTTP ' + r.status); }})
-      .then(function () {{ setTimeout(poll, 400); }})
+      .then(function () {{ setTimeout(poll, 350); }})
       .catch(function (e) {{ fail(e.message || String(e)); }});
   }});
 }})();
