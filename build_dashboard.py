@@ -833,9 +833,10 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
         <li>Hyros reports <b>{M["hyros_report_leads_on_summit_adsets"]} attributed leads</b> on these ad sets
           against <b>{M["tagged_leads_paid"]}</b> carrying the tag. The tag-filtered figure is used everywhere here.</li>
         <li><b>Ad rows sum to {money(M["ad_level_spend_sum"])} of the {money(TOTAL["spend"])} total.</b> Hyros has not yet
-          broken every ad set's spend down to individual ads, so the campaign table and the headline
-          figures use the ad-set numbers, which are authoritative. The creative ranking below uses the
-          ad rows, so its spend column runs slightly light.</li>
+          broken every ad set's spend down to individual ads, and the ad level is one full-window pull
+          taken seconds after the per-day sweep rather than part of it. The campaign table and the
+          headline figures use the ad-set numbers, which are authoritative; the creative ranking below
+          uses the ad rows, so its spend column runs slightly light.</li>
         <li>Five older sales sit on tagged leads but predate {esc(M["first_spend_day"])}, the first day any
           Fall Summit ad ran: four staff test transactions and one Preservation Summit rebill. All five are
           listed in the purchase ledger.</li>

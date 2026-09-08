@@ -65,11 +65,15 @@ def slot_for(campaign_name):
 
 def discover():
     """Every summit ad set and ad, straight from Hyros. Returns (adsets, ads)."""
-    adsets, ads = {}, {}
+    adsets, ads, unmatched = {}, {}, set()
     for s in paged("sources", {"pageSize": 250, "integrationType": "FACEBOOK"}):
         camp = ((s.get("category") or {}).get("name")) or ""
         slot = slot_for(camp)
         if not slot:
+            # Looks like this summit but matched no slot: almost certainly a rename.
+            # Silently dropping one is how Page 3, 4 and 5 went missing originally.
+            if IS_SUMMIT.search(camp) and not EXCLUDE.search(camp):
+                unmatched.add(camp)
             continue
         src = s.get("adSource") or {}
         if not src.get("adSourceId"):
@@ -94,10 +98,7 @@ def discover():
             "account": "TSA" if src.get("adAccountId") == "3014083142121289" else "STS",
             "type": "video" if (meta["slot"] == "Video" or re.search(r"\bvideo\b", name, re.I)) else "image",
         }
-    # Any summit campaign we could not slot is a naming change, not a no-op. Say so.
-    unmatched = {((s.get("category") or {}).get("name") or "")
-                 for s in []}
-    return adsets, ads, unmatched
+    return adsets, ads, sorted(unmatched)
 
 
 def attribution(ids, level, start, end):
@@ -118,6 +119,7 @@ def attribution(ids, level, start, end):
                 "spend": round(float(r.get("cost") or 0), 2),
                 "clicks": int(r.get("clicks") or 0),
                 "impressions": int(r.get("impressions") or 0),
+                "leads": int(r.get("leads") or 0),
                 "sales_lastclick": int(r.get("sales") or 0),
                 "revenue_lastclick": float(r.get("revenue") or 0),
             }
@@ -233,14 +235,15 @@ def main():
     first_day = cfg.get("first_spend_day") or (prev.get("meta") or {}).get("first_spend_day") or today
 
     print("discovering summit campaigns, ad sets and ads...")
-    adsets, ads, _ = discover()
+    adsets, ads, unmatched = discover()
+    if unmatched:
+        print("  WARNING: summit campaigns matching no slot (renamed?): "
+              + "; ".join(unmatched))
     slots_found = sorted({v["slot"] for v in adsets.values()})
     print(f"  {len(adsets)} ad sets, {len(ads)} ads across {len(slots_found)} slots: {', '.join(slots_found)}")
     if not adsets:
         raise SystemExit("No summit ad sets found. Campaign naming may have changed.")
 
-    print("pulling attribution...")
-    ad_run = attribution(list(ads), "facebook_ad", first_day, today)
 
     print("pulling tagged leads...")
     lead_rows, leads_per_ad, leads_per_day, paid = tagged_leads()
@@ -302,6 +305,12 @@ def main():
             daily.append(row)
     today_row = next((r for r in daily if r["date"] == today),
                      day_row(today, per_day_attr.get(today, {})))
+
+    # Ad level stays one full-window pull: per-day would be 12 batched calls per day.
+    # Taken here, straight after the sweep, so the gap against the campaign rows is
+    # seconds rather than minutes.
+    print("pulling ad-level attribution...")
+    ad_run = attribution(list(ads), "facebook_ad", first_day, today)
 
     as_day = per_day_attr.get(today, {})
     as_run = {}
