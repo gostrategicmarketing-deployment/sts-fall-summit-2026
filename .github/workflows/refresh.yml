@@ -132,6 +132,28 @@ jobs:
           mkdir -p _site
           cp index.html _site/index.html
           [ -f robots.txt ] && cp robots.txt _site/robots.txt || true
+          # Creatives are files beside the page now, not base64 inside it. Without this
+          # the published page would render every thumbnail broken.
+          if [ -d creatives ]; then
+            cp -R creatives _site/creatives
+            echo "staged $(ls creatives | wc -l | tr -d ' ') creative files"
+          else
+            echo "::warning::no creatives directory; thumbnails will be missing"
+          fi
+
+      - name: Check the published page can find its images
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          h = pathlib.Path("_site/index.html").read_text()
+          refs = set(re.findall(r'src="(creatives/[^"]+)"', h))
+          missing = [r for r in refs if not (pathlib.Path("_site") / r).exists()]
+          print(f"{len(refs)} creative references, {len(missing)} missing")
+          if missing:
+              print("::error::published page references images that were not staged: "
+                    + ", ".join(sorted(missing)[:6]))
+              sys.exit(1)
+          PY
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -13,12 +13,41 @@ import json, html, datetime, pathlib
 import sys
 ROOT = pathlib.Path(__file__).parent
 REDACT   = "--redact" in sys.argv          # anonymise the purchase ledger for public hosting
+# Creatives ship as files next to the page by default. Inlining them as base64 made the
+# document 6.4 MB, 99% of it images that never change, and the browser re-downloaded the
+# lot on every refresh. As files they are fetched once and cached. --inline-images
+# restores the self-contained build for anywhere that cannot load side files.
+INLINE   = "--inline-images" in sys.argv
 OUT_NAME = "fall-summit-2026-dashboard.html"
 if "--out" in sys.argv:
     OUT_NAME = sys.argv[sys.argv.index("--out") + 1]
 D = json.loads((ROOT / "data" / "dashboard_data.json").read_text())
 _af = ROOT / "data" / "creative_assets.json"
 ASSETS = json.loads(_af.read_text()) if _af.exists() else {}
+
+IMG_DIR = ROOT / "creatives"
+
+
+def _export_images():
+    """Write each creative beside the page and return {ad_id: relative src}."""
+    import base64 as _b64
+    srcs = {}
+    if INLINE:
+        return {k: v["data_uri"] for k, v in ASSETS.items()}
+    IMG_DIR.mkdir(exist_ok=True)
+    for aid, a in ASSETS.items():
+        uri = a.get("data_uri") or ""
+        if "," not in uri:
+            continue
+        f = IMG_DIR / f"{aid}.jpg"
+        raw = _b64.b64decode(uri.split(",", 1)[1])
+        if not f.exists() or f.read_bytes() != raw:
+            f.write_bytes(raw)
+        srcs[aid] = f"creatives/{aid}.jpg"
+    return srcs
+
+
+IMG_SRC = _export_images()
 M, CAMPS, ADS, LEDGER, DAILY = D["meta"], D["campaigns"], D["ads"], D["purchase_ledger"], D["daily"]
 
 CAMPAIGN_ORDER = ["Page 1", "Page 2", "Page 3", "Page 4", "Page 5", "General Hooks", "Grid", "Video"]
@@ -146,12 +175,14 @@ def thumb(ad):
                 '<span>no<br>preview</span></span>')
     label = esc(short_name(ad["name"]))
     play = '<span class="thumb-play" aria-hidden="true">&#9654;</span>' if a["kind"] == "video" else ""
-    return (f'<button type="button" class="thumb" data-full="{a["data_uri"]}" '
+    src = IMG_SRC.get(ad["id"], a.get("data_uri", ""))
+    return (f'<button type="button" class="thumb" data-full="{src}" '
             f'data-name="{label}" data-manage="{esc(a["ads_manager_url"])}" '
             f'data-watch="{esc(a.get("watch_url",""))}" '
             f'data-dims="{a["orig_w"]} &times; {a["orig_h"]}" '
             f'aria-label="Enlarge creative: {label}">'
-            f'<img src="{a["data_uri"]}" alt="{label}" loading="lazy">{play}</button>')
+            f'<img src="{src}" alt="{label}" loading="lazy" '
+            f'width="64" height="64" decoding="async">{play}</button>')
 
 def bar(value, maximum, tone):
     pct = min(100, (value / maximum * 100) if maximum else 0)
@@ -991,7 +1022,13 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 
   function poll() {{
     fetch('/status', {{ cache: 'no-store' }})
-      .then(function (r) {{ return r.json(); }})
+      .then(function (r) {{
+        if (r.status === 404) {{
+          throw new Error('This server is an older instance and has no /status. '
+                        + 'Quit it and reopen Fall Summit Dashboard.command.');
+        }}
+        return r.json();
+      }})
       .then(function (s) {{
         if (s.running) {{
           stageTo(s.stage);
