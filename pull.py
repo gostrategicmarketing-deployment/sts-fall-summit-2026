@@ -299,7 +299,7 @@ def main():
     # because a few tagged leads landed before Hyros recorded any spend and would
     # otherwise belong to no day at all.
     def day_row(day, attr):
-        led = [s for s in ledger if s["date"] == day and s["ad"] != "n/a"]
+        led = [s for s in ledger if s["date"] == day]
         return {
             "date": day,
             "spend": round(sum(x.get("spend", 0.0) for x in attr.values()), 2),
@@ -390,6 +390,10 @@ def main():
         })
 
     total_spend = round(sum(c["spend"] for c in camp_rows), 2)
+    # Sales the tag counts but no creative can be credited with: the sale record carries
+    # no summit ad touch at all. They belong in the headline, per the counting rule, but
+    # cannot sit in any campaign row.
+    uncredited = [s for s in ledger if s["ad"] in (None, "", "n/a")]
 
     daily_p = DATA / "daily.json"
     daily_p.write_text(json.dumps(daily, indent=2))
@@ -413,6 +417,8 @@ def main():
         "tagged_leads_organic_or_direct": len(lead_rows) - paid,
         "hyros_report_leads_on_summit_adsets": sum(x.get("leads", 0) for x in as_run.values()),
         "ad_level_spend_sum": round(sum(a["spend"] for a in ad_rows), 2),
+        "uncredited_purchases": len(uncredited),
+        "uncredited_revenue": round(sum(s["amount"] for s in uncredited), 2),
         "ad_level_leads_are_tag_filtered": True,
         "sales_credit_rule": ("Any sale from a lead carrying !summit-2026 counts, whatever click "
                               "closed it. Credit goes to that lead's summit ad touch."),

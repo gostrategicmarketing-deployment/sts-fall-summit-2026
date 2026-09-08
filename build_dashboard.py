@@ -92,6 +92,16 @@ def block(rows):
                 cpm=div(s, imp) * 1000 if imp else None)
 
 TOTAL = block(CAMPS)
+# A tagged sale with no summit ad touch counts toward the headline but sits in no
+# campaign, so fold it back in here and recompute what depends on it. Without this the
+# headline silently under-reported the tag's own purchases.
+_unc_n = int(M.get("uncredited_purchases", 0) or 0)
+_unc_rev = float(M.get("uncredited_revenue", 0) or 0)
+if _unc_n or _unc_rev:
+    TOTAL["purchases"] += _unc_n
+    TOTAL["revenue"] = round(TOTAL["revenue"] + _unc_rev, 2)
+    TOTAL["cpp"] = div(TOTAL["spend"], TOTAL["purchases"])
+    TOTAL["roas"] = div(TOTAL["revenue"], TOTAL["spend"])
 
 # "Just Today" is its own window, pulled separately by pull.py. It is never derived
 # from TOTAL: rendering one block into both decks is exactly what made the two read
@@ -397,6 +407,14 @@ else:
 
 NOINDEX = ('<meta name="robots" content="noindex, nofollow">\n' if REDACT else "")
 
+# The published copy is served statically: there is nothing for a Refresh button to
+# POST to, so it is not rendered there at all rather than shipped dead.
+REFRESH_UI = "" if REDACT else (
+    '<button type="button" id="refreshBtn" class="refresh-btn" hidden>'
+    '<span class="rb-dot"></span><span class="rb-ring" aria-hidden="true"></span>'
+    '<span id="rbLabel">Refresh</span></button>'
+    '<span id="rbErr" class="rb-err" hidden></span>')
+
 PAGE = f"""<meta charset="utf-8">
 {NOINDEX}<title>Fall Summit 2026 Acquisition Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -465,6 +483,9 @@ h1,h2,h3 {{ font-family:var(--f-display); font-weight:400; text-wrap:balance; ma
   box-shadow:0 1px 2px rgba(53,56,63,.14); transition:filter .12s ease, transform .08s ease; }}
 .refresh-btn:hover {{ filter:brightness(1.07); }}
 .refresh-btn:active {{ transform:translateY(1px); }}
+/* Author display wins over the UA [hidden] rule, so say it explicitly or a button the
+   script never wires up still renders, full size and completely dead. */
+.refresh-btn[hidden], .rb-err[hidden] {{ display:none !important; }}
 .refresh-btn[disabled] {{ cursor:progress; filter:saturate(.45); }}
 .rb-dot {{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex:0 0 auto; }}
 .refresh-btn[disabled] .rb-dot {{ animation:rbpulse .9s ease-in-out infinite; }}
@@ -696,10 +717,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <h1>Fall Summit 2026<br><em>Acquisition Board</em></h1>
   </div>
   <div class="stamp">
-    <button type="button" id="refreshBtn" class="refresh-btn" hidden>
-      <span class="rb-dot"></span><span class="rb-ring" aria-hidden="true"></span><span id="rbLabel">Refresh</span>
-    </button>
-    <span id="rbErr" class="rb-err" hidden></span>
+    {REFRESH_UI}
     <b>Pulled {esc(M["pulled_at"])}</b>
     Times are the ad account's<br>
     Source: Hyros<br>
@@ -893,6 +911,13 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       <ul>
         <li>Hyros reports <b>{M["hyros_report_leads_on_summit_adsets"]} attributed leads</b> on these ad sets
           against <b>{M["tagged_leads_paid"]}</b> carrying the tag. The tag-filtered figure is used everywhere here.</li>
+        {f'<li><b>{_unc_n} purchase{"" if _unc_n == 1 else "s"} worth {money(_unc_rev)} '
+          f'{"counts" if _unc_n == 1 else "count"} but {"sits" if _unc_n == 1 else "sit"} in no campaign.</b> '
+          f'The tag says {"it is a summit sale" if _unc_n == 1 else "they are summit sales"}, but '
+          f'{"its sale record carries" if _unc_n == 1 else "their sale records carry"} no summit ad touch, '
+          f'so no creative can be credited. {"It is" if _unc_n == 1 else "They are"} in the headline and in '
+          f'the ledger; the campaign rows below add up to {TOTAL["purchases"] - _unc_n} and '
+          f'{money(TOTAL["revenue"] - _unc_rev)}.</li>' if _unc_n else ''}
         <li><b>Ad rows sum to {money(M["ad_level_spend_sum"])} of the {money(TOTAL["spend"])} total.</b> Hyros has not yet
           broken every ad set's spend down to individual ads, and the ad level is one full-window pull
           taken seconds after the per-day sweep rather than part of it. The campaign table and the
