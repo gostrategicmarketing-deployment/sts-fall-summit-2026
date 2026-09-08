@@ -442,6 +442,15 @@ WORKFLOW_URL = ("https://github.com/gostrategicmarketing-deployment/"
 # GitHub will not dispatch a workflow unauthenticated. So rather than a dead button, it
 # links to the run page, where one click on "Run workflow" rebuilds this page. Labelled
 # for what it is, so nobody expects an instant update.
+# The shared copy has no button, so telling its reader to "press Refresh" points at a
+# control that is not there, and a build command is nobody's business but ours.
+FOOTER_NOTES = (
+    "  <span>Rebuilt on request, not on a timer</span>\n"
+    if REDACT else
+    "  <span>Press Refresh to re-pull Hyros; nothing runs on a timer</span>\n"
+    "  <span>Rebuild locally: <code class=\"seq\">python3 build_dashboard.py</code></span>\n"
+)
+
 REFRESH_UI = "" if REDACT else (
     '<button type="button" id="refreshBtn" class="refresh-btn" hidden>'
     '<span class="rb-dot"></span><span class="rb-ring" aria-hidden="true"></span>'
@@ -902,7 +911,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 <section>
   <div class="sec-head">
     <h2>How these numbers are built</h2>
-    <p>Everything on this page comes from the Hyros MCP. No Meta figures, no pixel data.</p>
+    <p>Everything on this page comes from Hyros. No Meta figures, no pixel data.</p>
   </div>
   <div class="method">
     <div class="mcard">
@@ -976,10 +985,8 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 
 <footer>
   <span>School of Traditional Skills and Traditional Skills Academy</span>
-  <span>Data pulled {esc(M["pulled_at"])} from the Hyros MCP</span>
-  <span>Press Refresh to re-pull Hyros; nothing runs on a timer</span>
-  <span>Rebuild locally: <code class="seq">python3 build_dashboard.py</code></span>
-</footer>
+  <span>Data pulled {esc(M["pulled_at"])} from Hyros</span>
+{FOOTER_NOTES}</footer>
 </div>
 
 <div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Creative preview">
