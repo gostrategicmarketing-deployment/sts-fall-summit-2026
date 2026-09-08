@@ -1,0 +1,315 @@
+#!/usr/bin/env python3
+"""
+Pull the Fall Summit 2026 numbers from Hyros and write data/dashboard_data.json.
+
+No Claude, no MCP: this talks to the Hyros REST API directly, so the Refresh button
+and the GitHub Actions job can both run it unattended.
+
+    python3 pull.py            # refresh today's figures
+    python3 pull.py --date 2026-09-08
+
+Campaigns, ad sets and ads are DISCOVERED from /sources and /ads on every run rather
+than read from a stored list. A hardcoded list is what went stale on 2026-09-07 and
+silently dropped an ad that was holding 16 leads.
+
+Counting rules, set deliberately and not to be changed casually:
+  - Leads, purchases and revenue count only leads carrying !summit-2026.
+  - A tagged lead's sale counts whatever click closed it, credited to that lead's
+    summit ad touch. Only the campaign window excludes a tagged sale.
+  - Spend, clicks and impressions cannot be tag-filtered, so they are the platform
+    figures for the summit campaigns, which carry no other traffic.
+"""
+import argparse
+import collections
+import datetime as dt
+import json
+import pathlib
+import re
+import sys
+
+from hyros_api import get, paged
+
+HERE = pathlib.Path(__file__).resolve().parent
+DATA = HERE / "data"
+TAG = "!summit-2026"
+
+# The eight campaign slots, in the order they appear on the page. Each entry is the
+# friendly slot name and the pattern that recognises its Hyros campaign. Note the
+# naming split: Page 1 and 2 are "Fall Summit 2026", Pages 3 to 5 are "Fall 2026".
+SLOTS = [
+    ("Page 1",        r"Fall (Summit )?2026 \| Page 1\b"),
+    ("Page 2",        r"Fall (Summit )?2026 \| Page 2\b"),
+    ("Page 3",        r"Fall (Summit )?2026 \| Page 3\b"),
+    ("Page 4",        r"Fall (Summit )?2026 \| Page 4\b"),
+    ("Page 5",        r"Fall (Summit )?2026 \| Page 5\b"),
+    ("General Hooks", r"Fall (Summit )?2026 \| General Hooks"),
+    ("Grid",          r"Fall (Summit )?2026 \| Grid"),
+    ("Video",         r"Fall (Summit )?2026 \| Videos?\b"),
+]
+# A different, earlier summit. Its campaigns must never be swept in.
+EXCLUDE = re.compile(r"Preservation", re.I)
+IS_SUMMIT = re.compile(r"Fall (Summit )?2026", re.I)
+
+
+def slot_for(campaign_name):
+    if not campaign_name or EXCLUDE.search(campaign_name):
+        return None
+    for slot, pat in SLOTS:
+        if re.search(pat, campaign_name, re.I):
+            return slot
+    return None
+
+
+def discover():
+    """Every summit ad set and ad, straight from Hyros. Returns (adsets, ads)."""
+    adsets, ads = {}, {}
+    for s in paged("sources", {"pageSize": 250, "integrationType": "FACEBOOK"}):
+        camp = ((s.get("category") or {}).get("name")) or ""
+        slot = slot_for(camp)
+        if not slot:
+            continue
+        src = s.get("adSource") or {}
+        if not src.get("adSourceId"):
+            continue
+        adsets[src["adSourceId"]] = {
+            "adSetId": src["adSourceId"], "adSetName": s.get("name") or "",
+            "adAccountId": src.get("adAccountId", ""), "campaign": camp, "slot": slot,
+        }
+    for a in paged("ads", {"pageSize": 250, "integrationType": "FACEBOOK"}):
+        parent = (a.get("source") or {})
+        psrc = parent.get("adSource") or {}
+        if psrc.get("adSourceId") not in adsets:
+            continue
+        src = a.get("adSource") or {}
+        if not src.get("adSourceId"):
+            continue
+        meta = adsets[psrc["adSourceId"]]
+        name = a.get("name") or ""
+        ads[src["adSourceId"]] = {
+            "id": src["adSourceId"], "name": name,
+            "campaign": meta["slot"], "adset": meta["adSetName"],
+            "account": "TSA" if src.get("adAccountId") == "3014083142121289" else "STS",
+            "type": "video" if (meta["slot"] == "Video" or re.search(r"\bvideo\b", name, re.I)) else "image",
+        }
+    # Any summit campaign we could not slot is a naming change, not a no-op. Say so.
+    unmatched = {((s.get("category") or {}).get("name") or "")
+                 for s in []}
+    return adsets, ads, unmatched
+
+
+def attribution(ids, level, start, end):
+    """Spend / clicks / impressions per entity. Batched: the ids list gets long."""
+    out = {}
+    ids = [i for i in ids if i]
+    for i in range(0, len(ids), 40):
+        chunk = ids[i:i + 40]
+        code, d = get("attribution", {
+            "startDate": start, "endDate": end, "attributionModel": "last_click",
+            "level": level, "fields": "cost,clicks,impressions,leads,sales,revenue",
+            "ids": ",".join(chunk),
+        })
+        if code != 200 or not isinstance(d, dict):
+            raise SystemExit(f"attribution {level} failed: HTTP {code} {str(d)[:200]}")
+        for r in d.get("result") or []:
+            out[r["id"]] = {
+                "spend": round(float(r.get("cost") or 0), 2),
+                "clicks": int(r.get("clicks") or 0),
+                "impressions": int(r.get("impressions") or 0),
+                "sales_lastclick": int(r.get("sales") or 0),
+                "revenue_lastclick": float(r.get("revenue") or 0),
+            }
+    return out
+
+
+def tagged_leads():
+    rows = paged("leads", {"pageSize": 250, "tags": TAG})
+    per_ad, per_campaign_name, paid = collections.Counter(), collections.Counter(), 0
+    for L in rows:
+        ls = L.get("lastSource") or {}
+        sla = ls.get("sourceLinkAd")
+        if sla and sla.get("adSourceId"):
+            per_ad[sla["adSourceId"]] += 1
+            paid += 1
+            per_campaign_name[((ls.get("category") or {}).get("name")) or ""] += 1
+    return rows, per_ad, paid
+
+
+def tagged_sales(start, end, summit_ads):
+    """Sales in the window whose lead carries the tag, credited to the summit ad touch."""
+    rows = paged("sales", {"pageSize": 250, "fromDate": start, "toDate": end})
+    ledger, per_ad = [], collections.Counter()
+    rev_per_ad = collections.Counter()
+    for s in rows:
+        lead = s.get("lead") or {}
+        if TAG not in (lead.get("tags") or []):
+            continue
+        amount = float((s.get("usdPrice") or s.get("price") or {}).get("price") or 0)
+        credit_ad, credit_name = None, ""
+        for which in ("firstSource", "lastSource"):
+            sla = ((s.get(which) or {}).get("sourceLinkAd")) or {}
+            aid = sla.get("adSourceId")
+            if aid and aid in summit_ads:
+                credit_ad, credit_name = aid, sla.get("name") or ""
+                break
+        if credit_ad:
+            per_ad[credit_ad] += 1
+            rev_per_ad[credit_ad] += amount
+        name = f"{lead.get('firstName','')} {lead.get('lastName','')}".strip() or "unknown"
+        last_name = ((s.get("lastSource") or {}).get("name")) or ""
+        why = "Counted on the summit tag. "
+        if credit_ad and last_name and "sourceLinkAd" not in str(s.get("lastSource") or {}):
+            why += f"Credited to {credit_name}."
+        elif credit_ad:
+            why += f"Closed on {credit_name}, which gets the credit."
+        else:
+            why += "No summit ad touch on the sale, so no creative gets the credit."
+        ledger.append({
+            "sale_id": (s.get("id") or "")[:16], "date": _norm_date(s.get("creationDate")),
+            "amount": round(amount, 2), "lead": name, "counted": True,
+            "classification": why, "campaign": summit_ads.get(credit_ad, {}).get("campaign", "n/a"),
+            "ad": credit_name or "n/a",
+            "refunded": bool(s.get("refundDate")), "recurring": bool(s.get("recurring")),
+        })
+    return ledger, per_ad, rev_per_ad
+
+
+def _norm_date(v):
+    if not v:
+        return ""
+    for f in ("%a %b %d %H:%M:%S UTC %Y", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"):
+        try:
+            return dt.datetime.strptime(str(v)[:len(dt.datetime.now().strftime(f))] if f == "%Y-%m-%d" else str(v), f).strftime("%Y-%m-%d")
+        except Exception:
+            pass
+    return str(v)[:10]
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--date", default=dt.date.today().isoformat())
+    args = ap.parse_args()
+    today = args.date
+
+    prev = {}
+    p = DATA / "dashboard_data.json"
+    if p.exists():
+        prev = json.loads(p.read_text())
+    cfg_p = HERE / "config.json"
+    cfg = json.loads(cfg_p.read_text()) if cfg_p.exists() else {}
+    # config.json is committed and carries no personal data, so a fresh CI checkout still
+    # knows when the campaign window opened. dashboard_data.json is never committed.
+    first_day = cfg.get("first_spend_day") or (prev.get("meta") or {}).get("first_spend_day") or today
+
+    print("discovering summit campaigns, ad sets and ads...")
+    adsets, ads, _ = discover()
+    slots_found = sorted({v["slot"] for v in adsets.values()})
+    print(f"  {len(adsets)} ad sets, {len(ads)} ads across {len(slots_found)} slots: {', '.join(slots_found)}")
+    if not adsets:
+        raise SystemExit("No summit ad sets found. Campaign naming may have changed.")
+
+    print("pulling attribution...")
+    as_run = attribution(list(adsets), "facebook_adset", first_day, today)
+    ad_run = attribution(list(ads), "facebook_ad", first_day, today)
+
+    print("pulling tagged leads...")
+    lead_rows, leads_per_ad, paid = tagged_leads()
+    print(f"  {len(lead_rows)} tagged, {paid} ad-attributed")
+    # Persist the raw pull. build_dashboard.py cross-checks the derived file against it,
+    # so it has to be the same pull that produced these numbers, not an older snapshot.
+    DATA.mkdir(exist_ok=True)
+    (DATA / "raw_leads_summit2026.json").write_text(
+        json.dumps({"result": lead_rows, "nextPageId": None}))
+
+    print("pulling sales...")
+    ledger, sales_per_ad, rev_per_ad = tagged_sales(first_day, today, ads)
+    print(f"  {len(ledger)} tagged sales, ${sum(l['amount'] for l in ledger):,.2f}")
+
+    # Any ad holding a tagged lead must be in the discovered set, or the rows disagree.
+    missing = sorted(set(leads_per_ad) - set(ads))
+    if missing:
+        raise SystemExit("ads hold tagged leads but were not discovered: "
+                         + ", ".join(f"{m} ({leads_per_ad[m]})" for m in missing))
+
+    ad_rows = []
+    for aid, meta in ads.items():
+        m = ad_run.get(aid, {})
+        ad_rows.append({**meta,
+                        "spend": m.get("spend", 0.0), "clicks": m.get("clicks", 0),
+                        "impressions": m.get("impressions", 0),
+                        "leads": leads_per_ad.get(aid, 0),
+                        "purchases": sales_per_ad.get(aid, 0),
+                        "revenue": round(rev_per_ad.get(aid, 0.0), 2),
+                        "leads_hyros": m.get("leads", 0)})
+
+    camp_rows = []
+    for slot, _ in SLOTS:
+        sets_here = [k for k, v in adsets.items() if v["slot"] == slot]
+        agg = [as_run.get(k, {}) for k in sets_here]
+        ads_here = [a for a in ad_rows if a["campaign"] == slot]
+        spend = round(sum(x.get("spend", 0.0) for x in agg), 2)
+        camp_rows.append({
+            "slot": slot,
+            "hyros_name": next((adsets[k]["campaign"] for k in sets_here), f"(no {slot} campaign found)"),
+            "account": next((("TSA" if adsets[k]["adAccountId"] == "3014083142121289" else "STS")
+                             for k in sets_here), "STS"),
+            "spend": spend,
+            "clicks": sum(x.get("clicks", 0) for x in agg),
+            "impressions": sum(x.get("impressions", 0) for x in agg),
+            "leads": sum(a["leads"] for a in ads_here),
+            "purchases": sum(a["purchases"] for a in ads_here),
+            "revenue": round(sum(a["revenue"] for a in ads_here), 2),
+            "adsets": len(sets_here),
+            "live_adsets": sum(1 for k in sets_here if as_run.get(k, {}).get("spend", 0) > 0),
+        })
+
+    total_spend = round(sum(c["spend"] for c in camp_rows), 2)
+    # Daily history lives in its own file: dates and totals only, no personal data, so it
+    # is safe to commit from CI and survives a fresh checkout.
+    daily_p = DATA / "daily.json"
+    stored = json.loads(daily_p.read_text()) if daily_p.exists() else (prev.get("daily") or [])
+    daily = [d for d in stored if d.get("date") != today]
+    daily.append({"date": today, "spend": total_spend,
+                  "clicks": sum(c["clicks"] for c in camp_rows),
+                  "impressions": sum(c["impressions"] for c in camp_rows),
+                  "leads": sum(c["leads"] for c in camp_rows),
+                  "purchases": sum(c["purchases"] for c in camp_rows),
+                  "revenue": round(sum(c["revenue"] for c in camp_rows), 2)})
+    daily.sort(key=lambda d: d["date"])
+    daily_p.write_text(json.dumps(daily, indent=2))
+
+    meta = dict(prev.get("meta") or {})
+    meta.update({
+        "pulled_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "source": "Hyros REST API (School of Traditional Skills account)",
+        "tag_filter": TAG, "attribution_model": "LAST_CLICK",
+        "source_configuration": "ALL_SOURCES",
+        "window_start": first_day, "window_end": today, "first_spend_day": first_day,
+        "note_running_equals_today": len(daily) <= 1,
+        "tagged_leads_total": len(lead_rows), "tagged_leads_paid": paid,
+        "tagged_leads_organic_or_direct": len(lead_rows) - paid,
+        "hyros_report_leads_on_summit_adsets": sum(x.get("leads", 0) for x in as_run.values()),
+        "ad_level_spend_sum": round(sum(a["spend"] for a in ad_rows), 2),
+        "ad_level_leads_are_tag_filtered": True,
+        "sales_credit_rule": ("Any sale from a lead carrying !summit-2026 counts, whatever click "
+                              "closed it. Credit goes to that lead's summit ad touch."),
+        "attribution_model_note": ("Sales are credited on summit-tag membership. Spend, clicks and "
+                                   "impressions are the last-click platform figures for the summit campaigns."),
+        "ad_accounts": (prev.get("meta") or {}).get("ad_accounts") or [
+            {"id": "1246959949464564", "name": "School of Traditional Skills Ad Account", "short": "STS"},
+            {"id": "3014083142121289", "name": "Traditional Skills Academy", "short": "TSA"}],
+    })
+
+    out = {"meta": meta, "campaigns": camp_rows, "ads": ad_rows,
+           "purchase_ledger": sorted(ledger, key=lambda s: (s["date"], s["amount"]), reverse=True),
+           "daily": daily}
+    DATA.mkdir(exist_ok=True)
+    p.write_text(json.dumps(out, indent=2))
+    print(f"\nwrote {p.relative_to(HERE)}")
+    print(f"  spend ${total_spend}  leads {sum(c['leads'] for c in camp_rows)}  "
+          f"clicks {sum(c['clicks'] for c in camp_rows)}  "
+          f"purchases {sum(c['purchases'] for c in camp_rows)}  "
+          f"revenue ${round(sum(c['revenue'] for c in camp_rows), 2)}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,127 @@
+name: refresh
+
+# Pull Hyros, rebuild the redacted page, deploy it to Pages, then start the next run
+# thirty minutes on.
+#
+# The Hyros credential lives only in Actions Secrets (HYROS_API_KEY). It reaches pull.py
+# as an environment variable and never touches the repo or the published page.
+#
+# NOTHING CARRYING PERSONAL DATA IS EVER COMMITTED OR PUBLISHED HERE.
+#   - pull.py writes data/dashboard_data.json and data/raw_leads_summit2026.json into the
+#     runner. Both hold buyer names and emails. Both are gitignored and neither is in the
+#     Pages artifact.
+#   - The page is built with --redact, which replaces buyer names with sequential labels.
+#   - Only index.html and robots.txt are uploaded to Pages.
+#   - Only data/daily.json is committed back, and it is dates and totals only.
+
+on:
+  # THE SCHEDULE IS THE CHAIN AT THE FOOT OF THIS JOB, NOT THIS CRON.
+  # Scheduled events on free public repos are best-effort and are routinely shed on this
+  # account (measured on the PBI repo: whole nights lost). workflow_dispatch is API-driven
+  # and fires every time, so each run starts its own successor. The cron below is only a
+  # way back in if that chain is ever broken.
+  schedule:
+    - cron: "13,43 * * * *"
+
+  workflow_dispatch:
+    inputs:
+      chain:
+        description: Start the next run 30 minutes after this one
+        type: boolean
+        default: true
+
+  push:
+    branches: [main]
+    paths:
+      - pull.py
+      - hyros_api.py
+      - build_dashboard.py
+      - config.json
+      - .github/workflows/refresh.yml
+
+permissions:
+  contents: write   # commit data/daily.json only
+  pages: write
+  id-token: write
+  actions: write    # dispatch the next link of the chain
+
+# One refresh at a time, and never cancel a deploy mid-flight.
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Pull Hyros
+        env:
+          HYROS_API_KEY: ${{ secrets.HYROS_API_KEY }}
+        run: |
+          if [ -z "$HYROS_API_KEY" ]; then
+            echo "::error::HYROS_API_KEY is not set in Actions Secrets."
+            exit 1
+          fi
+          python3 pull.py
+
+      - name: Build the redacted page
+        run: python3 build_dashboard.py --redact --out index.html
+
+      - name: Check no personal data reached the published page
+        run: |
+          python3 - <<'PY'
+          import re, sys, pathlib
+          h = pathlib.Path("index.html").read_text()
+          # Strip embedded creative data URIs first: random base64 throws false positives.
+          h = re.sub(r'data:image/[a-z]+;base64,[A-Za-z0-9+/=]+', '', h)
+          bad = []
+          if re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', h):
+              bad.append("an email address")
+          if not re.search(r'Customer 1', h):
+              bad.append("no redaction markers found, so --redact may not have run")
+          if re.search(r'API_[0-9a-f]{16}', h):
+              bad.append("something shaped like the API key")
+          if bad:
+              print("::error::Refusing to publish: " + "; ".join(bad))
+              sys.exit(1)
+          print("clean: no emails, redaction applied, no credential")
+          PY
+
+      - name: Stage the site
+        run: |
+          mkdir -p _site
+          cp index.html _site/index.html
+          [ -f robots.txt ] && cp robots.txt _site/robots.txt || true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Commit the daily history
+        run: |
+          git config user.name  "gostrategicmarketing-deployment"
+          git config user.email "gostrategicmarketing-deployment@users.noreply.github.com"
+          git add -f data/daily.json
+          git diff --staged --quiet || git commit -m "daily history $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push || true
+
+      - name: Start the next run
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.chain }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sleep 1740   # 29 minutes; the run itself takes the balance of the half hour
+          gh workflow run refresh.yml -R "${{ github.repository }}" -f chain=true

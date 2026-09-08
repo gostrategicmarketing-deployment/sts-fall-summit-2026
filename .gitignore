@@ -1,0 +1,9 @@
+# Never commit anything carrying personal data. pull.py writes these into the runner;
+# they hold buyer names, emails, IPs and phone numbers.
+data/dashboard_data.json
+data/raw_leads_summit2026.json
+data/*.prev.json
+hyros_key.txt
+*.key
+_site/
+.commitmsg
