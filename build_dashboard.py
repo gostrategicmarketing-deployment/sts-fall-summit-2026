@@ -901,7 +901,12 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 }})();
 
 // Refresh button. Only useful when serve.py is hosting the page, since a static host
-// has nothing to POST to; the published copy refreshes itself through GitHub Actions.
+// has nothing to POST to; the published copy is rebuilt by the same press via Actions.
+//
+// The refresh takes roughly twenty seconds: Hyros is paged for leads, sales and a
+// window per day, then the page is rebuilt. Earlier this button just sat there for
+// that whole time and a second press got a 409, which read as "it did not work". It
+// now polls for the live stage and a second press simply joins the run in flight.
 (function () {{
   var local = ['localhost', '127.0.0.1', '::1'].indexOf(location.hostname) !== -1;
   var btn = document.getElementById('refreshBtn'),
@@ -909,22 +914,40 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       err = document.getElementById('rbErr');
   if (!local || !btn) return;
   btn.hidden = false;
+
+  function fail(m) {{
+    btn.disabled = false;
+    label.textContent = 'Refresh';
+    err.textContent = m;
+    err.hidden = false;
+  }}
+
+  function poll() {{
+    fetch('/status', {{ cache: 'no-store' }})
+      .then(function (r) {{ return r.json(); }})
+      .then(function (s) {{
+        if (s.running) {{
+          label.textContent = (s.stage || 'Working') + '\u2026 ' + Math.round(s.elapsed) + 's';
+          setTimeout(poll, 700);
+          return;
+        }}
+        if (s.error) {{ fail(s.error); return; }}
+        label.textContent = 'Reloading\u2026';
+        // Cache-bust: a plain reload can be served from cache and then the page looks
+        // unchanged even though it was just rebuilt.
+        location.replace(location.pathname + '?t=' + Date.now());
+      }})
+      .catch(function (e) {{ fail(e.message || String(e)); }});
+  }}
+
   btn.addEventListener('click', function () {{
     btn.disabled = true;
     err.hidden = true;
-    label.textContent = 'Pulling Hyros...';
-    fetch('/refresh', {{ method: 'POST' }})
-      .then(function (r) {{ return r.json().catch(function () {{ return {{ ok: r.ok }}; }}); }})
-      .then(function (d) {{
-        if (d && d.ok) {{ label.textContent = 'Reloading...'; location.reload(); }}
-        else {{ throw new Error((d && d.error) || 'Refresh failed'); }}
-      }})
-      .catch(function (e) {{
-        btn.disabled = false;
-        label.textContent = 'Refresh';
-        err.textContent = e.message || String(e);
-        err.hidden = false;
-      }});
+    label.textContent = 'Starting\u2026';
+    fetch('/refresh', {{ method: 'POST', cache: 'no-store' }})
+      .then(function (r) {{ if (!r.ok && r.status !== 409) throw new Error('HTTP ' + r.status); }})
+      .then(function () {{ setTimeout(poll, 400); }})
+      .catch(function (e) {{ fail(e.message || String(e)); }});
   }});
 }})();
 </script>
