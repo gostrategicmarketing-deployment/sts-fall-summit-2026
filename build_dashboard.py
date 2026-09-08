@@ -586,7 +586,7 @@ td.tc, th.tc {{ width:76px; padding-right:0; }}
 .mcard ul.plain {{ list-style:none; padding:0; }}
 .mcard ul.plain li {{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; }}
 .mcard-refresh {{ border-left:3px solid var(--sun); }}
-.askline {{ font-family:var(--f-mono); font-size:12.5px; background:var(--surface-2);
+.askline {{ display:inline-block; font-family:var(--f-mono); font-size:12px; background:var(--surface-2);
   border:1px solid var(--line); border-left:3px solid var(--sun); border-radius:3px;
   padding:9px 12px; color:var(--text) !important; }}
 footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
@@ -783,13 +783,17 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     </div>
     <div class="mcard mcard-refresh">
       <h3>Refreshing this page</h3>
-      <p>Hyros has no API key in this workspace, so the numbers come through Claude rather than a
-      background job. A button here could not re-pull them. To get current figures, say:</p>
-      <p class="askline">Refresh the Fall Summit dashboard</p>
-      <p>That re-pulls every Hyros figure, re-fetches any new creatives and republishes to this same
-      link, so anyone you have shared it with sees the update. Meta creative URLs expire after a few
-      days, which is the other reason a refresh is a rebuild rather than a page reload.</p>
-      <p>A daily automatic refresh can be scheduled on request.</p>
+      {"".join([
+        "<p>This page rebuilds itself from Hyros every 30 minutes. Nothing to press and nobody to ask: "
+        "a scheduled job re-pulls the account, rebuilds and republishes here.</p>"
+        "<p>The timestamp above is the pull it was built from.</p>"
+      ]) if REDACT else "".join([
+        "<p>Two ways, neither of which needs Claude:</p>",
+        "<p><b>Locally, right now.</b> Double-click <span class='askline'>Fall Summit Dashboard.command</span> "
+        "and press Refresh on the page. It re-pulls Hyros and rebuilds in one click.</p>",
+        "<p><b>The shared copy</b> at <span class='askline'>gostrategicmarketing-deployment.github.io/sts-fall-summit-2026/</span> "
+        "rebuilds itself from Hyros every 30 minutes through GitHub Actions, with buyer names redacted.</p>",
+      ])}
     </div>
     <div class="mcard">
       <h3>Known variances</h3>
