@@ -409,7 +409,22 @@ NOINDEX = ('<meta name="robots" content="noindex, nofollow">\n' if REDACT else "
 
 # The published copy is served statically: there is nothing for a Refresh button to
 # POST to, so it is not rendered there at all rather than shipped dead.
-REFRESH_UI = "" if REDACT else (
+WORKFLOW_URL = ("https://github.com/gostrategicmarketing-deployment/"
+                "sts-fall-summit-2026/actions/workflows/refresh.yml")
+
+# Two different controls, because the two copies can do different things.
+# Locally serve.py can re-pull Hyros, so the button does the work in place.
+# The published copy is static: nothing there can hold a credential or run a pull, and
+# GitHub will not dispatch a workflow unauthenticated. So rather than a dead button, it
+# links to the run page, where one click on "Run workflow" rebuilds this page. Labelled
+# for what it is, so nobody expects an instant update.
+REFRESH_UI = (
+    f'<a class="refresh-btn refresh-link" href="{WORKFLOW_URL}" target="_blank" '
+    f'rel="noopener" title="Opens GitHub Actions. Press Run workflow to rebuild this '
+    f'page from Hyros; it takes about a minute.">'
+    f'<span class="rb-dot"></span><span>Rebuild on GitHub</span>'
+    f'<span class="rb-ext" aria-hidden="true">&#8599;</span></a>'
+) if REDACT else (
     '<button type="button" id="refreshBtn" class="refresh-btn" hidden>'
     '<span class="rb-dot"></span><span class="rb-ring" aria-hidden="true"></span>'
     '<span id="rbLabel">Refresh</span></button>'
@@ -486,6 +501,8 @@ h1,h2,h3 {{ font-family:var(--f-display); font-weight:400; text-wrap:balance; ma
 /* Author display wins over the UA [hidden] rule, so say it explicitly or a button the
    script never wires up still renders, full size and completely dead. */
 .refresh-btn[hidden], .rb-err[hidden] {{ display:none !important; }}
+.refresh-link {{ text-decoration:none; }}
+.rb-ext {{ font-size:13px; opacity:.75; }}
 .refresh-btn[disabled] {{ cursor:progress; filter:saturate(.45); }}
 .rb-dot {{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex:0 0 auto; }}
 .refresh-btn[disabled] .rb-dot {{ animation:rbpulse .9s ease-in-out infinite; }}
