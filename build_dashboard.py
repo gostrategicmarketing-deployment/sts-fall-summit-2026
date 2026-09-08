@@ -64,6 +64,14 @@ def block(rows):
 
 TOTAL = block(CAMPS)
 
+# "Just Today" is its own window, pulled separately by pull.py. It is never derived
+# from TOTAL: rendering one block into both decks is exactly what made the two read
+# identical on 2026-09-08. A data file without it is stale, so say so and stop.
+if "today" not in D:
+    raise SystemExit("dashboard_data.json has no `today` block. Re-run pull.py, "
+                     "which pulls the day window separately from the running total.")
+TODAY = block([D["today"]])
+
 # ---------- reconciliation ----------
 # Ad-level tagged leads must add up to every campaign row and to the paid-attributed
 # total. Fail loudly rather than render a page whose rows disagree with each other.
@@ -328,6 +336,30 @@ if HERO_ADS:
 accounts = "".join(
     f'<li><span class="acct acct-{a["short"].lower()}">{esc(a["short"])}</span>{esc(a["name"])}'
     f'<code class="seq">{esc(a["id"])}</code></li>' for a in M["ad_accounts"])
+
+def _prose_list(names):
+    if len(names) == 1:
+        return names[0]
+    return ", ".join(names[:-1]) + " and " + names[-1]
+
+_idle = [c["slot"] for c in CAMPS if c["spend"] <= 0]
+_idle_sentence = ""
+if _idle:
+    _verb = "has" if len(_idle) == 1 else "have"
+    _noun = "campaign" if len(_idle) == 1 else "campaigns"
+    _idle_sentence = (f" {len(_idle)} of the {len(CAMPS)} {_noun} {_verb} ad sets built but no "
+                      f"delivery yet: {esc(_prose_list(_idle))}.")
+
+if M.get("note_running_equals_today"):
+    notice_html = (f'<b>Day one.</b> The first Fall Summit spend Hyros recorded is '
+                   f'{esc(M["first_spend_day"])}, so <b>Just Today and Running Total are the same '
+                   f'numbers today</b>. They separate from tomorrow onward.{_idle_sentence}')
+else:
+    notice_html = (f'<b>Day {len(DAILY)} of delivery.</b> <b>Just Today</b> is '
+                   f'{esc(M["window_end"])} on its own, midnight to now in the account time zone. '
+                   f'<b>Running Total</b> covers {esc(M["first_spend_day"])} to '
+                   f'{esc(M["window_end"])}, every day the Fall Summit campaigns have '
+                   f'run.{_idle_sentence}')
 
 NOINDEX = ('<meta name="robots" content="noindex, nofollow">\n' if REDACT else "")
 
@@ -615,10 +647,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 
 <div class="notice">
   <span class="n-ico">&#9662;</span>
-  <p><b>Day one.</b> The first Fall Summit spend Hyros recorded is
-  {esc(M["first_spend_day"])}, so <b>Just Today and Running Total are currently the same numbers</b>.
-  They will separate from tomorrow onward. Three of the eight campaigns (Page 3, Page 4, Page 5)
-  and the Video campaign have ad sets built but no delivery yet.</p>
+  <p>{notice_html}</p>
 </div>
 
 <section>
@@ -629,12 +658,12 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
         <span class="deck-tag">{esc(M["window_end"])}</span>
         <p class="deck-note">Midnight to now, account time zone</p>
       </div>
-      <div class="grid">{deck(TOTAL)}</div>
+      <div class="grid">{deck(TODAY)}</div>
     </div>
     <div class="deck deck-run">
       <div class="deck-head">
         <h2>Running Total</h2>
-        <span class="deck-tag">Campaign to date</span>
+        <span class="deck-tag">{esc(M["first_spend_day"])} to {esc(M["window_end"])}</span>
         <p class="deck-note">Every day the Fall Summit campaigns have run</p>
       </div>
       <div class="grid">{deck(TOTAL)}</div>

@@ -1,20 +1,38 @@
 [
   {
+    "date": "2026-09-02",
+    "spend": 0.0,
+    "clicks": 0,
+    "impressions": 0,
+    "leads": 1,
+    "purchases": 0,
+    "revenue": 0
+  },
+  {
+    "date": "2026-09-04",
+    "spend": 0.0,
+    "clicks": 0,
+    "impressions": 0,
+    "leads": 4,
+    "purchases": 0,
+    "revenue": 0
+  },
+  {
     "date": "2026-09-07",
-    "spend": 104.13,
-    "clicks": 346,
-    "impressions": 11921,
-    "leads": 137,
+    "spend": 105.78,
+    "clicks": 356,
+    "impressions": 12064,
+    "leads": 132,
     "purchases": 4,
     "revenue": 85.0
   },
   {
     "date": "2026-09-08",
-    "spend": 245.35,
-    "clicks": 588,
-    "impressions": 21266,
-    "leads": 246,
-    "purchases": 8,
-    "revenue": 161.0
+    "spend": 139.57,
+    "clicks": 232,
+    "impressions": 9207,
+    "leads": 130,
+    "purchases": 4,
+    "revenue": 76.0
   }
 ]

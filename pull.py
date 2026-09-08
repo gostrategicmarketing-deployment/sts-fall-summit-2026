@@ -18,6 +18,9 @@ Counting rules, set deliberately and not to be changed casually:
     summit ad touch. Only the campaign window excludes a tagged sale.
   - Spend, clicks and impressions cannot be tag-filtered, so they are the platform
     figures for the summit campaigns, which carry no other traffic.
+  - TWO windows are pulled every run: first_day..today is the running total, and
+    today..today is today. The day figure is never derived from the cumulative one.
+    data/daily.json holds day rows, never campaign-to-date rows.
 """
 import argparse
 import collections
@@ -122,16 +125,25 @@ def attribution(ids, level, start, end):
 
 
 def tagged_leads():
+    """All tagged leads, counted per ad and per ad per calendar day.
+
+    creationDate comes back in the account's own timezone, so its first ten
+    characters are the local day the registration landed. That per-day split is
+    what makes "Just Today" a real day figure instead of a copy of the running
+    total.
+    """
     rows = paged("leads", {"pageSize": 250, "tags": TAG})
     per_ad, per_campaign_name, paid = collections.Counter(), collections.Counter(), 0
+    per_day = collections.defaultdict(collections.Counter)
     for L in rows:
         ls = L.get("lastSource") or {}
         sla = ls.get("sourceLinkAd")
         if sla and sla.get("adSourceId"):
             per_ad[sla["adSourceId"]] += 1
             paid += 1
+            per_day[str(L.get("creationDate") or "")[:10]][sla["adSourceId"]] += 1
             per_campaign_name[((ls.get("category") or {}).get("name")) or ""] += 1
-    return rows, per_ad, paid
+    return rows, per_ad, per_day, paid
 
 
 def tagged_sales(start, end, summit_ads):
@@ -231,8 +243,17 @@ def main():
     as_run = attribution(list(adsets), "facebook_adset", first_day, today)
     ad_run = attribution(list(ads), "facebook_ad", first_day, today)
 
+    # Two windows, always. first_day..today is the running total; today..today is
+    # today. Deriving one from the other is what produced identical decks: the
+    # cumulative pull was being filed as the day row.
+    if today == first_day:
+        as_day = as_run
+    else:
+        print("pulling today's attribution...")
+        as_day = attribution(list(adsets), "facebook_adset", today, today)
+
     print("pulling tagged leads...")
-    lead_rows, leads_per_ad, paid = tagged_leads()
+    lead_rows, leads_per_ad, leads_per_day, paid = tagged_leads()
     print(f"  {len(lead_rows)} tagged, {paid} ad-attributed")
     # Persist the raw pull. build_dashboard.py cross-checks the derived file against it,
     # so it has to be the same pull that produced these numbers, not an older snapshot.
@@ -283,19 +304,52 @@ def main():
         })
 
     total_spend = round(sum(c["spend"] for c in camp_rows), 2)
-    # Daily history lives in its own file: dates and totals only, no personal data, so it
-    # is safe to commit from CI and survives a fresh checkout.
+
+    # Every day row is rebuilt from its own pull, never appended and frozen. A row
+    # written mid-afternoon is only a snapshot: on 2026-09-08 the stored 2026-09-07
+    # row still read $80.82 while the settled day was $105.82, a quarter short. The
+    # window also starts at the earliest ad-attributed lead, not at first_spend_day,
+    # because a few tagged leads landed before Hyros recorded any spend and would
+    # otherwise belong to no day at all.
+    def day_row(day, attr):
+        led = [s for s in ledger if s["date"] == day and s["ad"] != "n/a"]
+        return {
+            "date": day,
+            "spend": round(sum(x.get("spend", 0.0) for x in attr.values()), 2),
+            "clicks": sum(x.get("clicks", 0) for x in attr.values()),
+            "impressions": sum(x.get("impressions", 0) for x in attr.values()),
+            "leads": sum(n for aid, n in leads_per_day.get(day, {}).items() if aid in ads),
+            "purchases": len(led),
+            "revenue": round(sum(s["amount"] for s in led), 2),
+        }
+
+    lead_days = {d for d, per in leads_per_day.items()
+                 if d and any(aid in ads for aid in per)}
+    span_start = min([first_day] + sorted(lead_days))
+    days = []
+    cur = dt.date.fromisoformat(span_start)
+    end = dt.date.fromisoformat(today)
+    while cur <= end:
+        days.append(cur.isoformat())
+        cur += dt.timedelta(days=1)
+
+    print(f"pulling {len(days)} day windows ({days[0]} to {days[-1]})...")
+    daily = []
+    for day in days:
+        attr = as_day if day == today and today != first_day else (
+            as_run if (day == today and today == first_day) else
+            attribution(list(adsets), "facebook_adset", day, day))
+        row = day_row(day, attr)
+        if row["spend"] or row["clicks"] or row["leads"] or row["purchases"]:
+            daily.append(row)
+    today_row = next((r for r in daily if r["date"] == today), day_row(today, as_day))
+
     daily_p = DATA / "daily.json"
-    stored = json.loads(daily_p.read_text()) if daily_p.exists() else (prev.get("daily") or [])
-    daily = [d for d in stored if d.get("date") != today]
-    daily.append({"date": today, "spend": total_spend,
-                  "clicks": sum(c["clicks"] for c in camp_rows),
-                  "impressions": sum(c["impressions"] for c in camp_rows),
-                  "leads": sum(c["leads"] for c in camp_rows),
-                  "purchases": sum(c["purchases"] for c in camp_rows),
-                  "revenue": round(sum(c["revenue"] for c in camp_rows), 2)})
-    daily.sort(key=lambda d: d["date"])
     daily_p.write_text(json.dumps(daily, indent=2))
+
+    # The day rows should add back up to the running total. Attribution restates a
+    # little as Hyros settles, so this is recorded, not enforced.
+    daily_spend_sum = round(sum(d["spend"] for d in daily), 2)
 
     meta = dict(prev.get("meta") or {})
     meta.update({
@@ -304,7 +358,10 @@ def main():
         "tag_filter": TAG, "attribution_model": "LAST_CLICK",
         "source_configuration": "ALL_SOURCES",
         "window_start": first_day, "window_end": today, "first_spend_day": first_day,
-        "note_running_equals_today": len(daily) <= 1,
+        "today": today,
+        "note_running_equals_today": today == first_day,
+        "daily_spend_sum": daily_spend_sum,
+        "daily_vs_running_spend_gap": round(total_spend - daily_spend_sum, 2),
         "tagged_leads_total": len(lead_rows), "tagged_leads_paid": paid,
         "tagged_leads_organic_or_direct": len(lead_rows) - paid,
         "hyros_report_leads_on_summit_adsets": sum(x.get("leads", 0) for x in as_run.values()),
@@ -321,11 +378,14 @@ def main():
 
     out = {"meta": meta, "campaigns": camp_rows, "ads": ad_rows,
            "purchase_ledger": sorted(ledger, key=lambda s: (s["date"], s["amount"]), reverse=True),
-           "daily": daily}
+           "today": today_row, "daily": daily}
     DATA.mkdir(exist_ok=True)
     p.write_text(json.dumps(out, indent=2))
     print(f"\nwrote {p.relative_to(HERE)}")
-    print(f"  spend ${total_spend}  leads {sum(c['leads'] for c in camp_rows)}  "
+    print(f"  today   spend ${today_row['spend']}  leads {today_row['leads']}  "
+          f"clicks {today_row['clicks']}  purchases {today_row['purchases']}  "
+          f"revenue ${today_row['revenue']}")
+    print(f"  running spend ${total_spend}  leads {sum(c['leads'] for c in camp_rows)}  "
           f"clicks {sum(c['clicks'] for c in camp_rows)}  "
           f"purchases {sum(c['purchases'] for c in camp_rows)}  "
           f"revenue ${round(sum(c['revenue'] for c in camp_rows), 2)}")
