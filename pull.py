@@ -184,11 +184,31 @@ def _norm_date(v):
     return str(v)[:10]
 
 
+# Hyros reports in the account's own timezone and rejects a date that is still in its
+# future. GitHub's runners are UTC, so after 17:00 Pacific "today" on the runner is
+# already tomorrow in Hyros and every attribution call 400s. Always ask the account.
+ACCOUNT_TZ = "America/Los_Angeles"
+
+
+def account_today():
+    try:
+        from zoneinfo import ZoneInfo
+        return dt.datetime.now(ZoneInfo(ACCOUNT_TZ)).date().isoformat()
+    except Exception:
+        # No tz database (slim containers): fall back to UTC minus the Pacific offset.
+        return (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=8)).date().isoformat()
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--date", default=dt.date.today().isoformat())
+    ap.add_argument("--date", default=None,
+                    help="defaults to today in the Hyros account timezone")
     args = ap.parse_args()
-    today = args.date
+    today = args.date or account_today()
+    cap = account_today()
+    if today > cap:
+        print(f"  {today} is in the future for the account; using {cap}")
+        today = cap
 
     prev = {}
     p = DATA / "dashboard_data.json"
