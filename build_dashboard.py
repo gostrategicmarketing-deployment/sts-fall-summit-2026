@@ -407,6 +407,30 @@ else:
 
 NOINDEX = ('<meta name="robots" content="noindex, nofollow">\n' if REDACT else "")
 
+
+def _freshness():
+    """The pulled_at stamp, split for display. Falls back to the raw string."""
+    raw = M.get("pulled_at", "")
+    try:
+        stamp, zone = raw.rsplit(" ", 1)
+        t = datetime.datetime.strptime(stamp, "%Y-%m-%d %H:%M")
+        clock = t.strftime("%-I:%M %p").replace("AM", "am").replace("PM", "pm")
+        return f"{clock} {zone}", t.strftime("%A %-d %B %Y")
+    except Exception:
+        return raw, ""
+
+
+FRESH_TIME, FRESH_DATE = _freshness()
+
+# Built outside the page template: a triple-quoted f-string cannot nest inside another.
+STAMP_HTML = (
+    '<div class="fresh">'
+    '<span class="fresh-lab">Data updated</span>'
+    f'<span class="fresh-time">{esc(FRESH_TIME)}</span>'
+    f'<span class="fresh-date">{esc(FRESH_DATE)}</span>'
+    '</div>'
+) if REDACT else f'<b>Pulled {esc(M["pulled_at"])}</b>'
+
 # The published copy is served statically: there is nothing for a Refresh button to
 # POST to, so it is not rendered there at all rather than shipped dead.
 WORKFLOW_URL = ("https://github.com/gostrategicmarketing-deployment/"
@@ -418,13 +442,7 @@ WORKFLOW_URL = ("https://github.com/gostrategicmarketing-deployment/"
 # GitHub will not dispatch a workflow unauthenticated. So rather than a dead button, it
 # links to the run page, where one click on "Run workflow" rebuilds this page. Labelled
 # for what it is, so nobody expects an instant update.
-REFRESH_UI = (
-    f'<a class="refresh-btn refresh-link" href="{WORKFLOW_URL}" target="_blank" '
-    f'rel="noopener" title="Opens GitHub Actions. Press Run workflow to rebuild this '
-    f'page from Hyros; it takes about a minute.">'
-    f'<span class="rb-dot"></span><span>Rebuild on GitHub</span>'
-    f'<span class="rb-ext" aria-hidden="true">&#8599;</span></a>'
-) if REDACT else (
+REFRESH_UI = "" if REDACT else (
     '<button type="button" id="refreshBtn" class="refresh-btn" hidden>'
     '<span class="rb-dot"></span><span class="rb-ring" aria-hidden="true"></span>'
     '<span id="rbLabel">Refresh</span></button>'
@@ -503,6 +521,14 @@ h1,h2,h3 {{ font-family:var(--f-display); font-weight:400; text-wrap:balance; ma
 .refresh-btn[hidden], .rb-err[hidden] {{ display:none !important; }}
 .refresh-link {{ text-decoration:none; }}
 .rb-ext {{ font-size:13px; opacity:.75; }}
+/* On the published copy this is the headline of the masthead: a static page cannot be
+   refreshed by its reader, so how old it is matters more than anything else up here. */
+.fresh {{ display:flex; flex-direction:column; align-items:flex-end; gap:1px; margin-bottom:10px; }}
+.fresh-lab {{ font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--text-3); font-weight:700; }}
+.fresh-time {{ font-family:var(--f-display); font-size:clamp(26px,3.4vw,36px); line-height:1.05;
+  color:var(--text); font-variant-numeric:tabular-nums; }}
+.fresh-date {{ font-size:12.5px; color:var(--text-2); }}
 .refresh-btn[disabled] {{ cursor:progress; filter:saturate(.45); }}
 .rb-dot {{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex:0 0 auto; }}
 .refresh-btn[disabled] .rb-dot {{ animation:rbpulse .9s ease-in-out infinite; }}
@@ -735,7 +761,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </div>
   <div class="stamp">
     {REFRESH_UI}
-    <b>Pulled {esc(M["pulled_at"])}</b>
+    {STAMP_HTML}
     Times are the ad account's<br>
     Source: Hyros<br>
     Sales credit: summit tag<br>
