@@ -151,7 +151,11 @@ if round(TOTAL["revenue"], 2) != round(sum(s["amount"] for s in _counted), 2):
 def rank(ads): return sorted(ads, key=lambda a: (-a["leads"], a["spend"] if a["leads"] else 1e9, -a["impressions"]))
 IMAGE_ADS = rank([a for a in ADS if a["type"] == "image"])[:10]
 VIDEO_ADS = rank([a for a in ADS if a["type"] == "video"])[:3]
-HERO_ADS  = sorted([a for a in ADS if a["purchases"] > 0], key=lambda a: -a["revenue"])
+# Sellers band: highest-earning creatives, capped like the tables above it. Listing all
+# 37 buried the ads actually worth copying under a wall of one-sale cards.
+HERO_TOP  = 10
+SELLERS   = sorted([a for a in ADS if a["purchases"] > 0], key=lambda a: -a["revenue"])
+HERO_ADS  = SELLERS[:HERO_TOP]
 
 CAMPS_BY_SLOT = {c["slot"]: c for c in CAMPS}
 MAX_CAMP_SPEND = max([c["spend"] for c in CAMPS] + [0.01])
@@ -350,9 +354,14 @@ def daily_rows():
 
 hero_html = ""
 if HERO_ADS:
-    n = len(HERO_ADS)
-    eyebrow = ("The only creative that has produced a sale" if n == 1
-               else f"The {n} creatives that have produced a sale")
+    n, total = len(HERO_ADS), len(SELLERS)
+    if total == 1:
+        eyebrow = "The only creative that has produced a sale"
+    elif n < total:
+        # Never print "the 10 creatives that have produced a sale" when 37 have.
+        eyebrow = f"The {n} highest-earning of the {total} creatives that have produced a sale"
+    else:
+        eyebrow = f"The {total} creatives that have produced a sale"
     cards = []
     for a in HERO_ADS:
         hb = block([a])

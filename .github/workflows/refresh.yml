@@ -97,7 +97,10 @@ jobs:
           rank = lambda x: (-x["leads"], x["spend"] if x["leads"] else 1e9, -x["impressions"])
           shown = {x["id"] for x in sorted([y for y in d["ads"] if y["type"]=="image"], key=rank)[:10]}
           shown |= {x["id"] for x in sorted([y for y in d["ads"] if y["type"]=="video"], key=rank)[:3]}
-          shown |= {x["id"] for x in d["ads"] if x["purchases"]}
+          # Mirror build_dashboard.py's HERO_TOP: only the ten highest-earning sellers
+          # are rendered, so wanting previews for all of them reports phantom gaps.
+          shown |= {x["id"] for x in sorted([y for y in d["ads"] if y["purchases"]],
+                                            key=lambda y: -y["revenue"])[:10]}
           missing = shown - set(a)
           print(f"PREVIEW COVERAGE {len(shown)-len(missing)}/{len(shown)} rendered ads have an image")
           if missing:

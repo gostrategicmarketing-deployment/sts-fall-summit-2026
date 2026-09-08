@@ -31,7 +31,7 @@ DATA = HERE / "data"
 ASSETS = DATA / "creative_assets.json"
 CACHE = DATA / "creatives"
 MAX_EDGE, QUALITY = 720, 76
-TOP_IMAGE, TOP_VIDEO = 10, 3
+TOP_IMAGE, TOP_VIDEO, TOP_SELLER = 10, 3, 10
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                     "AppleWebKit/537.36 Chrome/124 Safari/537.36"}
 
@@ -47,7 +47,7 @@ def wanted(data, everything=False):
         return [a for a in ads if a["spend"] or a["leads"]]
     imgs = sorted([a for a in ads if a["type"] == "image"], key=rank)[:TOP_IMAGE]
     vids = sorted([a for a in ads if a["type"] == "video"], key=rank)[:TOP_VIDEO]
-    buys = [a for a in ads if a["purchases"]]
+    buys = sorted([a for a in ads if a["purchases"]], key=lambda a: -a["revenue"])[:TOP_SELLER]
     seen, out = set(), []
     for a in imgs + vids + buys:
         if a["id"] not in seen:
