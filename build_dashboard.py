@@ -466,6 +466,42 @@ REFRESH_UI = "" if REDACT else (
     '<span id="rbLabel">Refresh</span></button>'
     '<span id="rbErr" class="rb-err" hidden></span>')
 
+# GitHub Pages serves every file with `cache-control: max-age=600` and that is not
+# configurable, so for ten minutes after a rebuild both Fastly and the reader's browser
+# keep handing back the previous page. Pressing Refresh looked broken for exactly that
+# reason: the deploy had landed, the reader was being served a cached copy of the old one.
+#
+# A query string is its own cache key, so a `?cb=` fetch always reaches the origin. The
+# page asks a tiny version file who is current, and if the answer is not itself, reloads
+# once under the new stamp. Runs on load and whenever the tab is brought forward, which
+# is the moment that matters: somebody presses Refresh here, then switches to that tab.
+STALE_JS = "" if not REDACT else """
+<script>
+(function () {
+  var MINE = %s, KEY = 'fs26-stamp-try';
+  function check() {
+    if (document.hidden) return;
+    fetch('version.json?cb=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v || !v.pulled_at || v.pulled_at === MINE) return;
+        // One reload per stamp per tab: if the new HTML somehow still reads old,
+        // sit still rather than spin.
+        var tried = null;
+        try { tried = sessionStorage.getItem(KEY); } catch (e) {}
+        if (tried === v.pulled_at) return;
+        try { sessionStorage.setItem(KEY, v.pulled_at); } catch (e) {}
+        location.replace(location.pathname + '?v=' + encodeURIComponent(v.pulled_at));
+      })
+      .catch(function () {});   // offline, or no version file: keep showing what we have
+  }
+  document.addEventListener('visibilitychange', check);
+  window.addEventListener('focus', check);
+  setTimeout(check, 1200);
+})();
+</script>
+""" % json.dumps(M["pulled_at"])
+
 PAGE = f"""<meta charset="utf-8">
 {NOINDEX}<title>Fall Summit 2026 Acquisition Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1147,7 +1183,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   }});
 }})();
 </script>
-"""
+{STALE_JS}"""
 
 out = ROOT / OUT_NAME
 out.write_text(PAGE)

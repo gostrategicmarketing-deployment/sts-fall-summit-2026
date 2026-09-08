@@ -135,6 +135,16 @@ jobs:
           mkdir -p _site
           cp index.html _site/index.html
           [ -f robots.txt ] && cp robots.txt _site/robots.txt || true
+          # The page asks this file whether it is current. Pages caches everything for
+          # ten minutes and that cannot be turned off, so without it a reader keeps
+          # seeing the previous build long after the deploy landed.
+          python3 - <<'PY'
+          import json, pathlib
+          d = json.loads(pathlib.Path("data/dashboard_data.json").read_text())
+          pathlib.Path("_site/version.json").write_text(
+              json.dumps({"pulled_at": d["meta"]["pulled_at"]}))
+          print("version.json says", d["meta"]["pulled_at"])
+          PY
           # Creatives are files beside the page now, not base64 inside it. Without this
           # the published page would render every thumbnail broken.
           if [ -d creatives ]; then
