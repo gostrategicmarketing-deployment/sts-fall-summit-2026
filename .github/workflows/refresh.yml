@@ -74,6 +74,20 @@ jobs:
           fi
           python3 pull.py
 
+      # Previews are the one thing Hyros cannot supply. Optional on purpose: without a
+      # Meta token in Secrets the ads still rank correctly and render a neutral tile,
+      # so a missing or expired token must never block publishing the numbers.
+      - name: Refresh creative previews
+        continue-on-error: true
+        env:
+          FB_TOKEN: ${{ secrets.FB_TOKEN }}
+        run: |
+          if [ -z "$FB_TOKEN" ]; then
+            echo "No FB_TOKEN secret; publishing with the previews already committed."
+          else
+            python3 fetch_creatives.py
+          fi
+
       - name: Build the redacted page
         run: python3 build_dashboard.py --redact --out index.html
 
