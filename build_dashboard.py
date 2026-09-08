@@ -425,19 +425,20 @@ h1,h2,h3 {{ font-family:var(--f-display); font-weight:400; text-wrap:balance; ma
   color:var(--text-3); font-weight:600; display:block; margin-bottom:9px; }}
 .mast h1 {{ font-size:clamp(30px,4.4vw,46px); line-height:1.06; }}
 .mast h1 em {{ font-style:italic; color:var(--sun-deep); }}
-.mast-sub {{ margin:11px 0 0; color:var(--text-2); max-width:60ch; font-size:14px; }}
 .stamp {{ text-align:right; font-size:12px; color:var(--text-2); line-height:1.75; }}
 .stamp b {{ display:block; font-size:13px; color:var(--text); font-weight:600; }}
-.refresh-btn {{ display:inline-flex; align-items:center; gap:8px; font-family:var(--f-body);
-  font-size:12.5px; font-weight:600; letter-spacing:.02em; color:var(--ink);
-  background:var(--sun); border:none; border-radius:3px; padding:7px 14px; cursor:pointer;
-  margin-bottom:9px; transition:filter .12s ease; }}
+.refresh-btn {{ display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  font-family:var(--f-body); font-size:15px; font-weight:700; letter-spacing:.02em;
+  color:var(--ink); background:var(--sun); border:none; border-radius:4px;
+  padding:13px 26px; min-width:210px; cursor:pointer; margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(53,56,63,.14); transition:filter .12s ease, transform .08s ease; }}
 .refresh-btn:hover {{ filter:brightness(1.07); }}
+.refresh-btn:active {{ transform:translateY(1px); }}
 .refresh-btn[disabled] {{ cursor:progress; filter:saturate(.45); }}
-.rb-dot {{ width:7px; height:7px; border-radius:50%; background:var(--ink); flex:0 0 auto; }}
+.rb-dot {{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex:0 0 auto; }}
 .refresh-btn[disabled] .rb-dot {{ animation:rbpulse .9s ease-in-out infinite; }}
 @keyframes rbpulse {{ 0%,100% {{ opacity:1; }} 50% {{ opacity:.25; }} }}
-.rb-err {{ display:block; font-size:11.5px; color:var(--bad); max-width:34ch;
+.rb-err {{ display:block; font-size:12px; color:var(--bad); max-width:34ch;
   margin-bottom:8px; text-align:right; }}
 
 /* ---- refresh progress ---- */
@@ -457,7 +458,7 @@ body.is-refreshing .deck-today::after {{
   background:linear-gradient(100deg, transparent 20%, rgba(233,178,66,.13) 50%, transparent 80%);
   background-size:220% 100%; animation:rbsweep 1.5s linear infinite; }}
 @keyframes rbsweep {{ from {{ background-position:120% 0; }} to {{ background-position:-120% 0; }} }}
-.rb-ring {{ width:12px; height:12px; flex:0 0 auto; border-radius:50%;
+.rb-ring {{ width:15px; height:15px; flex:0 0 auto; border-radius:50%;
   border:2px solid rgba(53,56,63,.28); border-top-color:var(--ink);
   animation:rbspin .7s linear infinite; display:none; }}
 .refresh-btn[disabled] .rb-ring {{ display:block; }}
@@ -468,8 +469,6 @@ body.is-refreshing .deck-today::after {{
   body.is-refreshing .deck-today::after {{ animation:none; }}
   #rbBar {{ transition:opacity .2s ease; }}
 }}
-.tagchip {{ display:inline-block; font-family:var(--f-mono); font-size:12px;
-  background:var(--sun); color:#2A2206; padding:3px 9px; border-radius:3px; font-weight:600; }}
 
 /* ---- launch notice ---- */
 .notice {{ display:flex; gap:13px; align-items:flex-start; margin-top:24px; padding:15px 18px;
@@ -664,8 +663,6 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   <div>
     <span class="mast-eyebrow">School of Traditional Skills &middot; paid acquisition</span>
     <h1>Fall Summit 2026<br><em>Acquisition Board</em></h1>
-    <p class="mast-sub">Both Meta ad accounts combined, scoped to the leads Hyros tags
-      <span class="tagchip">{esc(M["tag_filter"])}</span></p>
   </div>
   <div class="stamp">
     <button type="button" id="refreshBtn" class="refresh-btn" hidden>
