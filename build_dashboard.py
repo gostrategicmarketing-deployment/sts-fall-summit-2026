@@ -242,11 +242,15 @@ def campaign_row(slot):
     pill = ('<span class="pill pill-live">Delivering</span>' if live
             else '<span class="pill pill-idle">Not delivering</span>')
     adsets = f'{c["live_adsets"]} of {c["adsets"]} ad sets live'
+    # One chip per account. A campaign of the same name running in both accounts is a
+    # single row here, and the row has to say so.
+    chips = "".join(f'<span class="acct acct-{a.lower()}">{esc(a)}</span>'
+                    for a in c.get("accounts") or [c["account"]])
     return f"""<tr class="{'' if live else 'row-idle'}">
   <th scope="row">
     <span class="slot">{esc(slot)}</span>
     <span class="cname">{esc(c["hyros_name"])}</span>
-    <span class="cmeta"><span class="acct acct-{c['account'].lower()}">{esc(c["account"])}</span>{esc(adsets)}</span>
+    <span class="cmeta">{chips}{esc(adsets)}</span>
   </th>
   <td class="st">{pill}</td>
   <td class="n">{money(c["spend"])}{bar(c["spend"], MAX_CAMP_SPEND, "spend")}</td>

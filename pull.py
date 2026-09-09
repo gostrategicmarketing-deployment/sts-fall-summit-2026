@@ -415,8 +415,20 @@ def main():
             "slot": slot,
             "group": GROUP_OF[slot],
             "hyros_name": next((adsets[k]["campaign"] for k in sets_here), f"(no {slot} campaign found)"),
+            # Three campaigns (General Hooks, Grid, Videos) run under the SAME name in
+            # both accounts and are shown as one row. Taking the first ad set's account
+            # labelled all three "TSA" and hid the STS half of the spend from the reader.
+            "accounts": sorted({("TSA" if adsets[k]["adAccountId"] == "3014083142121289" else "STS")
+                                for k in sets_here}) or ["STS"],
             "account": next((("TSA" if adsets[k]["adAccountId"] == "3014083142121289" else "STS")
                              for k in sets_here), "STS"),
+            "spend_by_account": {
+                acct: round(sum(as_run.get(k, {}).get("spend", 0.0) for k in sets_here
+                                if (("TSA" if adsets[k]["adAccountId"] == "3014083142121289" else "STS")
+                                    == acct)), 2)
+                for acct in sorted({("TSA" if adsets[k]["adAccountId"] == "3014083142121289" else "STS")
+                                    for k in sets_here})
+            },
             "spend": spend,
             "clicks": sum(x.get("clicks", 0) for x in agg),
             "impressions": sum(x.get("impressions", 0) for x in agg),
