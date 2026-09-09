@@ -37,19 +37,33 @@ HERE = pathlib.Path(__file__).resolve().parent
 DATA = HERE / "data"
 TAG = "!summit-2026"
 
-# The eight campaign slots, in the order they appear on the page. Each entry is the
-# friendly slot name and the pattern that recognises its Hyros campaign. Note the
-# naming split: Page 1 and 2 are "Fall Summit 2026", Pages 3 to 5 are "Fall 2026".
+# The campaign slots, in the order they appear on the page. Each entry is the friendly
+# slot name and the pattern that recognises its Hyros campaign. "Summit" has been
+# optional since Pages 3 to 5 launched as "Fall 2026"; they read "Fall Summit 2026" now,
+# but the tolerance stays because the rename could go either way again.
+#
+# The patterns must not overlap. "Scaling" excludes a following number rather than
+# relying on Scaling 2 being listed first: order-dependent matching is the kind of thing
+# that survives review and then breaks silently a month later.
+# Third field is the group the page subtotals on.
 SLOTS = [
-    ("Page 1",        r"Fall (Summit )?2026 \| Page 1\b"),
-    ("Page 2",        r"Fall (Summit )?2026 \| Page 2\b"),
-    ("Page 3",        r"Fall (Summit )?2026 \| Page 3\b"),
-    ("Page 4",        r"Fall (Summit )?2026 \| Page 4\b"),
-    ("Page 5",        r"Fall (Summit )?2026 \| Page 5\b"),
-    ("General Hooks", r"Fall (Summit )?2026 \| General Hooks"),
-    ("Grid",          r"Fall (Summit )?2026 \| Grid"),
-    ("Video",         r"Fall (Summit )?2026 \| Videos?\b"),
+    ("Page 1",         r"Fall (Summit )?2026 \| Page 1\b",          "named"),
+    ("Page 2",         r"Fall (Summit )?2026 \| Page 2\b",          "named"),
+    ("Page 3",         r"Fall (Summit )?2026 \| Page 3\b",          "named"),
+    ("Page 4",         r"Fall (Summit )?2026 \| Page 4\b",          "named"),
+    ("Page 5",         r"Fall (Summit )?2026 \| Page 5\b",          "named"),
+    ("General Hooks",  r"Fall (Summit )?2026 \| General Hooks",      "named"),
+    ("Grid",           r"Fall (Summit )?2026 \| Grid",               "named"),
+    ("Video",          r"Fall (Summit )?2026 \| Videos?\b",          "named"),
+    # Launched 2026-09-08, where winners go to spend. One row each, by request: the
+    # duplicate carries its own budget and can win or lose on its own.
+    ("Scaling",        r"Fall (Summit )?2026 \| Scaling(?! *\d)",     "scaling"),
+    ("Scaling 2",      r"Fall (Summit )?2026 \| Scaling 2\b(?!.*-\s*Copy)", "scaling"),
+    ("Scaling 2 Copy", r"Fall (Summit )?2026 \| Scaling 2\b.*-\s*Copy",     "scaling"),
 ]
+GROUP_OF = {slot: group for slot, _pat, group in SLOTS}
+# Shown above each subtotal line. A group of one needs no subtotal; the page skips it.
+GROUP_LABEL = {"named": "named campaigns", "scaling": "scaling campaigns"}
 # A different, earlier summit. Its campaigns must never be swept in.
 EXCLUDE = re.compile(r"Preservation", re.I)
 IS_SUMMIT = re.compile(r"Fall (Summit )?2026", re.I)
@@ -58,7 +72,7 @@ IS_SUMMIT = re.compile(r"Fall (Summit )?2026", re.I)
 def slot_for(campaign_name):
     if not campaign_name or EXCLUDE.search(campaign_name):
         return None
-    for slot, pat in SLOTS:
+    for slot, pat, _group in SLOTS:
         if re.search(pat, campaign_name, re.I):
             return slot
     return None
@@ -369,13 +383,14 @@ def main():
                         "leads_hyros": m.get("leads", 0)})
 
     camp_rows = []
-    for slot, _ in SLOTS:
+    for slot, _pat, _group in SLOTS:
         sets_here = [k for k, v in adsets.items() if v["slot"] == slot]
         agg = [as_run.get(k, {}) for k in sets_here]
         ads_here = [a for a in ad_rows if a["campaign"] == slot]
         spend = round(sum(x.get("spend", 0.0) for x in agg), 2)
         camp_rows.append({
             "slot": slot,
+            "group": GROUP_OF[slot],
             "hyros_name": next((adsets[k]["campaign"] for k in sets_here), f"(no {slot} campaign found)"),
             "account": next((("TSA" if adsets[k]["adAccountId"] == "3014083142121289" else "STS")
                              for k in sets_here), "STS"),

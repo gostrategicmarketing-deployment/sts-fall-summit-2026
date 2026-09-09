@@ -50,7 +50,11 @@ def _export_images():
 IMG_SRC = _export_images()
 M, CAMPS, ADS, LEDGER, DAILY = D["meta"], D["campaigns"], D["ads"], D["purchase_ledger"], D["daily"]
 
-CAMPAIGN_ORDER = ["Page 1", "Page 2", "Page 3", "Page 4", "Page 5", "General Hooks", "Grid", "Video"]
+# Read the order off the data, never a list kept here. pull.py emits campaigns in SLOTS
+# order, so this stays the intended reading order while making it impossible to add a
+# campaign upstream and have the page quietly not show it. Hardcoding this is what hid
+# the two Scaling campaigns on 2026-09-09 after pull.py had already found them.
+CAMPAIGN_ORDER = [c["slot"] for c in D["campaigns"]]
 
 if REDACT:
     # Buyer identities never leave the private artifact. Every metric, date and amount is untouched;
@@ -202,16 +206,43 @@ def bar(value, maximum, tone):
     pct = min(100, (value / maximum * 100) if maximum else 0)
     return f'<span class="bar bar-{tone}"><span style="width:{pct:.1f}%"></span></span>'
 
-def campaign_rows():
-    out = []
-    for slot in CAMPAIGN_ORDER:
-        c = CAMPS_BY_SLOT[slot]
-        b = block([c])
-        live = c["spend"] > 0 or c["leads"] > 0
-        pill = ('<span class="pill pill-live">Delivering</span>' if live
-                else '<span class="pill pill-idle">Not delivering</span>')
-        adsets = f'{c["live_adsets"]} of {c["adsets"]} ad sets live'
-        out.append(f"""<tr class="{'' if live else 'row-idle'}">
+GROUP_LABEL = {"named": "named campaigns", "scaling": "scaling campaigns"}
+
+
+def subtotal_row(group, rows):
+    """A combined line under a run of campaigns of the same kind.
+
+    The eight named campaigns are the test bed and the scaling ones are where the
+    winners go, so the useful comparison is block against block, not row against
+    row. Derived from the same records the rows above it print, so it cannot drift.
+    """
+    b = block(rows)
+    n = len(rows)
+    label = GROUP_LABEL.get(group, group)
+    return f"""<tr class="row-sub">
+  <th scope="row"><span class="slot">{n} {esc(label)}</span></th>
+  <td class="st"></td>
+  <td class="n">{money(sum(c["spend"] for c in rows))}</td>
+  <td class="n">{num(sum(c["leads"] for c in rows))}</td>
+  <td class="n">{fmt(b["cpl"], "money")}</td>
+  <td class="n">{num(sum(c["clicks"] for c in rows))}</td>
+  <td class="n">{fmt(b["cpc"], "money")}</td>
+  <td class="n">{fmt(b["cvr"], "pct")}</td>
+  <td class="n">{num(sum(c["purchases"] for c in rows))}</td>
+  <td class="n">{money(sum(c["revenue"] for c in rows))}</td>
+  <td class="n">{fmt(b["cpp"], "money")}</td>
+  <td class="n hi">{fmt(b["roas"], "x")}</td>
+</tr>"""
+
+
+def campaign_row(slot):
+    c = CAMPS_BY_SLOT[slot]
+    b = block([c])
+    live = c["spend"] > 0 or c["leads"] > 0
+    pill = ('<span class="pill pill-live">Delivering</span>' if live
+            else '<span class="pill pill-idle">Not delivering</span>')
+    adsets = f'{c["live_adsets"]} of {c["adsets"]} ad sets live'
+    return f"""<tr class="{'' if live else 'row-idle'}">
   <th scope="row">
     <span class="slot">{esc(slot)}</span>
     <span class="cname">{esc(c["hyros_name"])}</span>
@@ -228,7 +259,31 @@ def campaign_rows():
   <td class="n">{money(c["revenue"])}</td>
   <td class="n">{fmt(b["cpp"], "money")}</td>
   <td class="n hi">{fmt(b["roas"], "x")}</td>
-</tr>""")
+</tr>"""
+
+
+def campaign_groups():
+    """Consecutive runs of campaigns sharing a group, in the data's own order.
+
+    Taken from the records rather than declared here, so a campaign added upstream
+    lands in the right block and its subtotal without this file being touched.
+    """
+    groups = []
+    for slot in CAMPAIGN_ORDER:
+        g = CAMPS_BY_SLOT[slot].get("group", "named")
+        if not groups or groups[-1][0] != g:
+            groups.append((g, []))
+        groups[-1][1].append(slot)
+    return groups
+
+
+def campaign_rows():
+    out = []
+    for group, slots in campaign_groups():
+        out.extend(campaign_row(s) for s in slots)
+        # A single campaign is its own subtotal; printing one would just repeat the row.
+        if len(slots) > 1:
+            out.append(subtotal_row(group, [CAMPS_BY_SLOT[x] for x in slots]))
     t = TOTAL
     out.append(f"""<tr class="row-total">
   <th scope="row"><span class="slot">All campaigns</span><span class="cmeta">{len(CAMPAIGN_ORDER)} campaigns, both accounts</span></th>
@@ -696,6 +751,11 @@ td.rk {{ font-family:var(--f-display); font-size:19px; color:var(--text-3); widt
 .row-idle {{ opacity:.62; }}
 .row-total th, .row-total td {{ background:var(--surface-2); font-weight:600;
   border-top:2px solid var(--ink); }}
+/* A subtotal closes its block without competing with the grand total: same weight,
+   a hairline instead of the heavy rule, and no fill. */
+.row-sub th, .row-sub td {{ font-weight:600; border-top:1px solid var(--ink);
+  border-bottom:1px solid var(--line); }}
+.row-sub .slot {{ font-size:15px; color:var(--text-2); }}
 .row-empty th {{ color:var(--text-3); }}
 .nil {{ color:var(--text-3); }}
 
