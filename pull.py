@@ -14,8 +14,11 @@ silently dropped an ad that was holding 16 leads.
 
 Counting rules, set deliberately and not to be changed casually:
   - Leads, purchases and revenue count only leads carrying !summit-2026.
-  - A tagged lead's sale counts whatever click closed it, credited to that lead's
-    summit ad touch. Only the campaign window excludes a tagged sale.
+  - A sale counts only if the buyer has a Facebook ad touch: the sale's own source is
+    a summit ad, or the lead reached the offer through one. A tagged sale with no ad
+    touch anywhere is organic and is excluded from every figure, though it stays
+    visible in the ledger marked Excluded. Where an ad touch exists, the sale counts
+    whatever click closed it, credited to that ad.
   - Spend, clicks and impressions cannot be tag-filtered, so they are the platform
     figures for the summit campaigns, which carry no other traffic.
   - TWO windows are pulled every run: first_day..today is the running total, and
@@ -201,16 +204,16 @@ def tagged_sales(start, end, summit_ads):
             rev_per_ad[credit_ad] += amount
         name = f"{lead.get('firstName','')} {lead.get('lastName','')}".strip() or "unknown"
         last_name = ((s.get("lastSource") or {}).get("name")) or ""
-        why = "Counted on the summit tag. "
         if credit_ad and last_name and "sourceLinkAd" not in str(s.get("lastSource") or {}):
-            why += f"Credited to {credit_name}."
+            why = f"Reached the offer through {credit_name}, which gets the credit."
         elif credit_ad:
-            why += f"Closed on {credit_name}, which gets the credit."
+            why = f"Closed on {credit_name}, which gets the credit."
         else:
-            why += "No summit ad touch on the sale, so no creative gets the credit."
+            why = ("No Facebook ad touch anywhere on this buyer, so it is organic and is "
+                   "excluded from every figure on this page.")
         ledger.append({
             "sale_id": (s.get("id") or "")[:16], "date": _norm_date(s.get("creationDate")),
-            "amount": round(amount, 2), "lead": name, "counted": True,
+            "amount": round(amount, 2), "lead": name, "counted": bool(credit_ad),
             "classification": why, "campaign": summit_ads.get(credit_ad, {}).get("campaign", "n/a"),
             "ad": credit_name or "n/a",
             "refunded": bool(s.get("refundDate")), "recurring": bool(s.get("recurring")),
@@ -317,7 +320,7 @@ def main():
     # because a few tagged leads landed before Hyros recorded any spend and would
     # otherwise belong to no day at all.
     def day_row(day, attr):
-        led = [s for s in ledger if s["date"] == day]
+        led = [s for s in ledger if s["date"] == day and s["counted"]]
         return {
             "date": day,
             "spend": round(sum(x.get("spend", 0.0) for x in attr.values()), 2),
@@ -459,10 +462,11 @@ def main():
                     print(f"  WARNING: hidden campaign is spending: {name} ${sp:,.2f}")
         except Exception as e:
             print(f"  could not check hidden campaigns ({type(e).__name__})")
-    # Sales the tag counts but no creative can be credited with: the sale record carries
-    # no summit ad touch at all. They belong in the headline, per the counting rule, but
-    # cannot sit in any campaign row.
-    uncredited = [s for s in ledger if s["ad"] in (None, "", "n/a")]
+    # Organic: the buyer never touched a Fall Summit ad, so the sale is not the ads'
+    # doing. STS runs organic traffic to the same offer, and those sales carry the tag
+    # like any other. Excluded from every figure, kept in the ledger marked Excluded so
+    # the money is visible rather than vanished.
+    excluded = [s for s in ledger if not s["counted"]]
 
     daily_p = DATA / "daily.json"
     daily_p.write_text(json.dumps(daily, indent=2))
@@ -492,11 +496,14 @@ def main():
         "tagged_leads_organic_or_direct": len(lead_rows) - paid,
         "hyros_report_leads_on_summit_adsets": sum(x.get("leads", 0) for x in as_run.values()),
         "ad_level_spend_sum": round(sum(a["spend"] for a in ad_rows), 2),
-        "uncredited_purchases": len(uncredited),
-        "uncredited_revenue": round(sum(s["amount"] for s in uncredited), 2),
+        # Renamed from uncredited_*: those were ADDED to the headline, these are removed
+        # from it. A stale reader keying on the old name would silently restore them.
+        "excluded_organic_purchases": len(excluded),
+        "excluded_organic_revenue": round(sum(s["amount"] for s in excluded), 2),
         "ad_level_leads_are_tag_filtered": True,
-        "sales_credit_rule": ("Any sale from a lead carrying !summit-2026 counts, whatever click "
-                              "closed it. Credit goes to that lead's summit ad touch."),
+        "sales_credit_rule": ("A sale counts only where the buyer has a Fall Summit ad touch, "
+                              "credited to that ad whatever click closed it. Tagged sales with no "
+                              "ad touch are organic and are excluded."),
         "attribution_model_note": ("Sales are credited on summit-tag membership. Spend, clicks and "
                                    "impressions are the last-click platform figures for the summit campaigns."),
         "ad_accounts": (prev.get("meta") or {}).get("ad_accounts") or [

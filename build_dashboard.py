@@ -96,16 +96,13 @@ def block(rows):
                 cpm=div(s, imp) * 1000 if imp else None)
 
 TOTAL = block(CAMPS)
-# A tagged sale with no summit ad touch counts toward the headline but sits in no
-# campaign, so fold it back in here and recompute what depends on it. Without this the
-# headline silently under-reported the tag's own purchases.
-_unc_n = int(M.get("uncredited_purchases", 0) or 0)
-_unc_rev = float(M.get("uncredited_revenue", 0) or 0)
-if _unc_n or _unc_rev:
-    TOTAL["purchases"] += _unc_n
-    TOTAL["revenue"] = round(TOTAL["revenue"] + _unc_rev, 2)
-    TOTAL["cpp"] = div(TOTAL["spend"], TOTAL["purchases"])
-    TOTAL["roas"] = div(TOTAL["revenue"], TOTAL["spend"])
+# Nothing is folded in on top of the campaigns any more. Until 2026-09-09 a tagged sale
+# with no ad touch was added back here, on the rule that the tag alone made it a summit
+# sale. It does not: STS runs organic traffic to the same offer, so those sales are not
+# the ads' doing and this page reports what the ads did. They stay in the ledger marked
+# Excluded, which is why the headline can be lower than the tag's own sale count.
+_exc_n = int(M.get("excluded_organic_purchases", 0) or 0)
+_exc_rev = float(M.get("excluded_organic_revenue", 0) or 0)
 
 # "Just Today" is its own window, pulled separately by pull.py. It is never derived
 # from TOTAL: rendering one block into both decks is exactly what made the two read
@@ -1048,8 +1045,10 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       {esc(M["pulled_at"])}, Meta counted {M.get("meta_reported_leads", 0):,} against
       Hyros&rsquo; <b>{M["tagged_leads_paid"]:,}</b>. Neither is broken: they count different things,
       and the gap is the reason Hyros is here.</p>
-      <p><b>A sale from a tagged lead counts whatever click closed it</b>, including an organic or
-      direct last click. Credit goes to that lead's summit ad touch.</p>
+      <p><b>A sale counts only where the buyer touched a Fall Summit ad.</b> If they reached the
+      offer through one, the sale counts whatever click closed it, credited to that ad. A tagged
+      sale with no ad touch anywhere is organic traffic, not the ads, and is left out of every
+      figure here.</p>
     </div>
     <div class="mcard">
       <h3>Definitions</h3>
@@ -1057,8 +1056,9 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
         <li><b>Page conversion</b> is leads divided by link clicks, as requested. It can exceed 100% on an
           individual ad when Hyros tracks a session Meta did not count as a link click.</li>
         <li><b>Cost per lead</b> is spend divided by tagged leads.</li>
-        <li><b>Purchases and revenue</b> are every sale from a !summit-2026 lead inside the campaign window,
-          regardless of last click.</li>
+        <li><b>Purchases and revenue</b> are sales from !summit-2026 leads who touched a Fall Summit
+          ad, inside the campaign window. The closing click may be anything; the ad touch is what
+          qualifies it. Organic sales carrying the tag are excluded.</li>
         <li><b>ROAS</b> is that revenue divided by spend. Break-even is 1.00x.</li>
       </ul>
     </div>
@@ -1082,13 +1082,13 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       <ul>
         <li>Hyros reports <b>{M["hyros_report_leads_on_summit_adsets"]} attributed leads</b> on these ad sets
           against <b>{M["tagged_leads_paid"]}</b> carrying the tag. The tag-filtered figure is used everywhere here.</li>
-        {f'<li><b>{_unc_n} purchase{"" if _unc_n == 1 else "s"} worth {money(_unc_rev)} '
-          f'{"counts" if _unc_n == 1 else "count"} but {"sits" if _unc_n == 1 else "sit"} in no campaign.</b> '
-          f'The tag says {"it is a summit sale" if _unc_n == 1 else "they are summit sales"}, but '
-          f'{"its sale record carries" if _unc_n == 1 else "their sale records carry"} no summit ad touch, '
-          f'so no creative can be credited. {"It is" if _unc_n == 1 else "They are"} in the headline and in '
-          f'the ledger; the campaign rows below add up to {TOTAL["purchases"] - _unc_n} and '
-          f'{money(TOTAL["revenue"] - _unc_rev)}.</li>' if _unc_n else ''}
+        {f'<li><b>{_exc_n} tagged sale{"" if _exc_n == 1 else "s"} worth {money(_exc_rev)} '
+          f'{"is" if _exc_n == 1 else "are"} excluded as organic.</b> '
+          f'{"It carries" if _exc_n == 1 else "They carry"} the summit tag but no Fall Summit ad touch '
+          f'anywhere, so {"it is" if _exc_n == 1 else "they are"} not the ads&rsquo; doing. Hyros counts '
+          f'{TOTAL["purchases"] + _exc_n} tagged sales in this window; this page reports the '
+          f'{TOTAL["purchases"]} the ads earned. The excluded {"one is" if _exc_n == 1 else "ones are"} '
+          f'in the ledger below, marked Excluded.</li>' if _exc_n else ''}
         <li><b>Ad rows sum to {money(M["ad_level_spend_sum"])} of the {money(TOTAL["spend"])} total.</b> Hyros has not yet
           broken every ad set's spend down to individual ads, and the ad level is one full-window pull
           taken seconds after the per-day sweep rather than part of it. The campaign table and the
