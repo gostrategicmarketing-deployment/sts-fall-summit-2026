@@ -222,14 +222,32 @@ def tagged_sales(start, end, summit_ads):
 
 
 def _norm_date(v):
+    """The calendar day a sale happened, in the ad account's timezone.
+
+    Hyros hands back two different formats and only one of them carries an offset.
+    Leads look like 2026-09-09T08:26:23-07:00, already account-local. Sales look like
+    "Wed Sep 09 00:05:58 UTC 2026", which is UTC. Reading the date off that string
+    filed every sale after 5pm Pacific on the following day: on 2026-09-09 that moved
+    17 of yesterday evening's sales into today, so "Just Today" read 81 sales where
+    Hyros itself showed 65. Spend and leads were always bucketed account-local, so the
+    day rows disagreed with each other as well as with Hyros.
+    """
     if not v:
         return ""
-    for f in ("%a %b %d %H:%M:%S UTC %Y", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"):
+    from zoneinfo import ZoneInfo
+    text = str(v)
+    for f in ("%a %b %d %H:%M:%S UTC %Y", "%Y-%m-%dT%H:%M:%S%z"):
         try:
-            return dt.datetime.strptime(str(v)[:len(dt.datetime.now().strftime(f))] if f == "%Y-%m-%d" else str(v), f).strftime("%Y-%m-%d")
-        except Exception:
-            pass
-    return str(v)[:10]
+            stamp = dt.datetime.strptime(text, f)
+        except ValueError:
+            continue
+        if stamp.tzinfo is None:                      # the UTC form says so in words
+            stamp = stamp.replace(tzinfo=dt.timezone.utc)
+        return stamp.astimezone(ZoneInfo(ACCOUNT_TZ)).strftime("%Y-%m-%d")
+    try:                                              # a bare date is already a day
+        return dt.datetime.strptime(text[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
+    except ValueError:
+        return text[:10]
 
 
 # Hyros reports in the account's own timezone and rejects a date that is still in its
