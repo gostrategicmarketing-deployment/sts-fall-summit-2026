@@ -55,15 +55,39 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Pull Hyros
+      - name: Pull the numbers
         env:
           HYROS_API_KEY: ${{ secrets.HYROS_API_KEY }}
+          # Cost comes from Meta now, not Hyros. Without this the pull still finishes,
+          # but on Hyros' relayed cost, which lags Meta by roughly 7% and would put the
+          # published page out of step with both Ads Manager and the local dashboard.
+          FB_TOKEN: ${{ secrets.FB_TOKEN }}
         run: |
           if [ -z "$HYROS_API_KEY" ]; then
             echo "::error::HYROS_API_KEY is not set in Actions Secrets."
             exit 1
           fi
+          if [ -z "$FB_TOKEN" ]; then
+            echo "::warning::FB_TOKEN is not set; spend will fall back to Hyros and lag Meta."
+          fi
           python3 pull.py
+
+      - name: Check spend came from Meta
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          m = json.loads(pathlib.Path("data/dashboard_data.json").read_text())["meta"]
+          src = m.get("cost_source")
+          print(f"cost source: {src}")
+          if src != "meta":
+              # Not fatal: numbers that lag beat no numbers. But it must be visible,
+              # because the failure is silent on the page itself otherwise.
+              print("::warning::spend fell back to Hyros and will not match Ads Manager: "
+                    + str(m.get("cost_source_note", "")))
+          if m.get("hidden_campaign_spend", 0):
+              print(f"::warning::a campaign hidden from the sheet is spending: "
+                    f"${m['hidden_campaign_spend']:,.2f}")
+          PY
 
       # Previews are the one thing Hyros cannot supply. Optional on purpose: without a
       # Meta token in Secrets the ads still rank correctly and render a neutral tile,

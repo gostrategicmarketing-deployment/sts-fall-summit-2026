@@ -1016,24 +1016,34 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 <section>
   <div class="sec-head">
     <h2>How these numbers are built</h2>
-    <p>Everything on this page comes from Hyros. No Meta figures, no pixel data.</p>
+    <p>Registrations and sales come from Hyros. Spend, link clicks and impressions come
+    from Meta, which bills them.</p>
   </div>
   <div class="method">
     <div class="mcard">
       <h3>Ad accounts and creatives</h3>
       <ul class="plain">{accounts}</ul>
       <p>Both sit under one Hyros account, so the two are combined without double counting.</p>
-      <p>Every metric on this page is Hyros. The creative previews are the only exception: those image
-      files come from the Meta Ads API and are embedded in the page, so they keep working after Meta's
-      own links expire.</p>
+      <p>The split is deliberate. <b>Hyros counts people</b>: it tracks server-side and catches
+      registrations and sales the pixel drops. <b>Meta counts money</b>: it is what actually bills the
+      card. Hyros relays cost rather than measuring it, and relays it late, so taking spend from Meta
+      is what keeps this page matching Ads Manager to the cent. Ad sets are matched by ID, never by
+      campaign name, so no other campaign in either account can leak in.</p>
+      <p>Creative previews are pulled from the Meta Ads API too, so they keep working after Meta's own
+      image links expire.</p>
     </div>
     <div class="mcard">
       <h3>The tag filter</h3>
       <p>Leads, purchases and revenue count only people carrying <b>{esc(M["tag_filter"])}</b>:
       {M["tagged_leads_total"]} leads in total, of which <b>{M["tagged_leads_paid"]}</b> are
       attributed to a Fall Summit ad and {M["tagged_leads_organic_or_direct"]} arrived organic or direct.</p>
-      <p>Hyros cannot tag-filter spend or clicks, so those are the platform figures for the
-      Fall Summit campaigns, which carry no other traffic.</p>
+      <p>Spend and link clicks cannot be tag-filtered by anyone, so those are the whole-campaign
+      figures for the Fall Summit ad sets.</p>
+      <p><b>Meta will report fewer registrations than this page does.</b> Its pixel only sees what it
+      can attribute in the browser; Hyros matches server-side. Reading the same window on
+      {esc(M["pulled_at"])}, Meta counted {M.get("meta_reported_leads", 0):,} against
+      Hyros&rsquo; <b>{M["tagged_leads_paid"]:,}</b>. Neither is broken: they count different things,
+      and the gap is the reason Hyros is here.</p>
       <p><b>A sale from a tagged lead counts whatever click closed it</b>, including an organic or
       direct last click. Credit goes to that lead's summit ad touch.</p>
     </div>

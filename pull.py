@@ -59,18 +59,22 @@ SLOTS = [
     # duplicate carries its own budget and can win or lose on its own.
     ("Scaling",        r"Fall (Summit )?2026 \| Scaling(?! *\d)",     "scaling"),
     ("Scaling 2",      r"Fall (Summit )?2026 \| Scaling 2\b(?!.*-\s*Copy)", "scaling"),
-    ("Scaling 2 Copy", r"Fall (Summit )?2026 \| Scaling 2\b.*-\s*Copy",     "scaling"),
 ]
 GROUP_OF = {slot: group for slot, _pat, group in SLOTS}
 # Shown above each subtotal line. A group of one needs no subtotal; the page skips it.
 GROUP_LABEL = {"named": "named campaigns", "scaling": "scaling campaigns"}
 # A different, earlier summit. Its campaigns must never be swept in.
 EXCLUDE = re.compile(r"Preservation", re.I)
+# Deliberately off the sheet. "Scaling 2 | ABO - Copy" was a duplicate that never left
+# review: Meta reports no delivery for it at all. Hidden rather than deleted, and
+# checked against Meta every run, so if it ever starts spending the pull says so
+# instead of quietly leaving the money off the page.
+HIDDEN = re.compile(r"Fall (Summit )?2026 \| Scaling 2\b.*-\s*Copy", re.I)
 IS_SUMMIT = re.compile(r"Fall (Summit )?2026", re.I)
 
 
 def slot_for(campaign_name):
-    if not campaign_name or EXCLUDE.search(campaign_name):
+    if not campaign_name or EXCLUDE.search(campaign_name) or HIDDEN.search(campaign_name):
         return None
     for slot, pat, _group in SLOTS:
         if re.search(pat, campaign_name, re.I):
@@ -91,7 +95,7 @@ def discover():
         if not slot:
             # Looks like this summit but matched no slot: almost certainly a rename.
             # Silently dropping one is how Page 3, 4 and 5 went missing originally.
-            if IS_SUMMIT.search(camp) and not EXCLUDE.search(camp):
+            if IS_SUMMIT.search(camp) and not EXCLUDE.search(camp) and not HIDDEN.search(camp):
                 unmatched.add(camp)
             continue
         src = s.get("adSource") or {}
@@ -341,10 +345,25 @@ def main():
     print(f"pulling {len(days)} day windows ({days[0]} to {days[-1]})...")
     daily, per_day_attr = [], {}
     ids_all = list(adsets)
-    with cf.ThreadPoolExecutor(max_workers=4) as ex:
-        fut = {ex.submit(attribution, ids_all, "facebook_adset", d, d): d for d in days}
-        for f in cf.as_completed(fut):
-            per_day_attr[fut[f]] = f.result()
+    # Cost comes from Meta, which bills it, not from Hyros, which relays it late. If
+    # Meta cannot be reached the run still completes on Hyros figures, but the page
+    # says so rather than quietly showing numbers that will not match Ads Manager.
+    cost_source, cost_note = "meta", ""
+    try:
+        from meta_cost import cost_by_adset_day
+        print("pulling spend from Meta...")
+        per_day_attr = cost_by_adset_day(ids_all, days[0], today)
+        for d in days:
+            per_day_attr.setdefault(d, {})
+    except Exception as e:
+        cost_source = "hyros"
+        cost_note = f"{type(e).__name__}: {e}"
+        print(f"  Meta unavailable ({cost_note}); falling back to Hyros cost, which lags")
+        per_day_attr = {}
+        with cf.ThreadPoolExecutor(max_workers=4) as ex:
+            fut = {ex.submit(attribution, ids_all, "facebook_adset", d, d): d for d in days}
+            for f in cf.as_completed(fut):
+                per_day_attr[fut[f]] = f.result()
     for day in days:
         row = day_row(day, per_day_attr[day])
         if row["spend"] or row["clicks"] or row["leads"] or row["purchases"]:
@@ -356,7 +375,11 @@ def main():
     # Taken here, straight after the sweep, so the gap against the campaign rows is
     # seconds rather than minutes.
     print("pulling ad-level attribution...")
-    ad_run = attribution(list(ads), "facebook_ad", first_day, today)
+    if cost_source == "meta":
+        from meta_cost import cost_by_ad
+        ad_run = cost_by_ad(list(ads), days[0], today)
+    else:
+        ad_run = attribution(list(ads), "facebook_ad", first_day, today)
 
     as_day = per_day_attr.get(today, {})
     as_run = {}
@@ -405,6 +428,25 @@ def main():
         })
 
     total_spend = round(sum(c["spend"] for c in camp_rows), 2)
+
+    # A campaign kept off the sheet must not be quietly spending. Cheap to check while
+    # we already have Meta open, and it is the only thing standing between "hidden" and
+    # "missing".
+    hidden_spend, meta_leads = 0.0, 0
+    if cost_source == "meta":
+        try:
+            from meta_cost import reported_leads
+            meta_leads = reported_leads(list(adsets), days[0], today)
+        except Exception:
+            meta_leads = 0
+        try:
+            from meta_cost import campaign_spend
+            for name, sp in campaign_spend("Fall Summit 2026", days[0], today).items():
+                if HIDDEN.search(name) and sp > 0:
+                    hidden_spend += sp
+                    print(f"  WARNING: hidden campaign is spending: {name} ${sp:,.2f}")
+        except Exception as e:
+            print(f"  could not check hidden campaigns ({type(e).__name__})")
     # Sales the tag counts but no creative can be credited with: the sale record carries
     # no summit ad touch at all. They belong in the headline, per the counting rule, but
     # cannot sit in any campaign row.
@@ -426,6 +468,12 @@ def main():
         "window_start": first_day, "window_end": today, "first_spend_day": first_day,
         "today": today,
         "note_running_equals_today": today == first_day,
+        "cost_source": cost_source,
+        "cost_source_note": cost_note,
+        "cost_source_label": ("Meta Ads (spend, link clicks, impressions)" if cost_source == "meta"
+                              else "Hyros relayed cost - Meta was unreachable, so these lag"),
+        "hidden_campaign_spend": hidden_spend,
+        "meta_reported_leads": meta_leads,
         "daily_spend_sum": daily_spend_sum,
         "daily_vs_running_spend_gap": round(total_spend - daily_spend_sum, 2),
         "tagged_leads_total": len(lead_rows), "tagged_leads_paid": paid,
