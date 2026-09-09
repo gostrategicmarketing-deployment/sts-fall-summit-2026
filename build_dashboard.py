@@ -92,6 +92,9 @@ def block(rows):
     rev = round(sum(r["revenue"] for r in rows), 2)
     return dict(spend=s, clicks=clk, impressions=imp, leads=ld, purchases=pur, revenue=rev,
                 cpl=div(s, ld), cpc=div(s, clk), cvr=div(ld, clk),
+                # Registrations that went on to buy. Divides by leads, not clicks: this
+                # is what the offer does once the ad has finished its job.
+                l2p=div(pur, ld),
                 cpp=div(s, pur), roas=div(rev, s), ctr=div(clk, imp),
                 cpm=div(s, imp) * 1000 if imp else None)
 
@@ -226,6 +229,7 @@ def subtotal_row(group, rows):
   <td class="n">{fmt(b["cpc"], "money")}</td>
   <td class="n">{fmt(b["cvr"], "pct")}</td>
   <td class="n">{num(sum(c["purchases"] for c in rows))}</td>
+  <td class="n">{fmt(b["l2p"], "pct")}</td>
   <td class="n">{money(sum(c["revenue"] for c in rows))}</td>
   <td class="n">{fmt(b["cpp"], "money")}</td>
   <td class="n hi">{fmt(b["roas"], "x")}</td>
@@ -257,6 +261,7 @@ def campaign_row(slot):
   <td class="n">{fmt(b["cpc"], "money")}</td>
   <td class="n">{fmt(b["cvr"], "pct")}</td>
   <td class="n">{num(c["purchases"])}</td>
+  <td class="n">{fmt(b["l2p"], "pct")}</td>
   <td class="n">{money(c["revenue"])}</td>
   <td class="n">{fmt(b["cpp"], "money")}</td>
   <td class="n hi">{fmt(b["roas"], "x")}</td>
@@ -296,6 +301,7 @@ def campaign_rows():
   <td class="n">{fmt(t["cpc"], "money")}</td>
   <td class="n">{fmt(t["cvr"], "pct")}</td>
   <td class="n">{num(t["purchases"])}</td>
+  <td class="n">{fmt(t["l2p"], "pct")}</td>
   <td class="n">{money(t["revenue"])}</td>
   <td class="n">{fmt(t["cpp"], "money")}</td>
   <td class="n hi">{fmt(t["roas"], "x")}</td>
@@ -930,7 +936,8 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
         <th scope="col" class="n">Spend</th><th scope="col" class="n">Leads</th>
         <th scope="col" class="n">Cost / lead</th><th scope="col" class="n">Link clicks</th>
         <th scope="col" class="n">Cost / click</th><th scope="col" class="n">Page conv.</th>
-        <th scope="col" class="n">Purchases</th><th scope="col" class="n">Revenue</th>
+        <th scope="col" class="n">Purchases</th><th scope="col" class="n">Reg. to sale</th>
+        <th scope="col" class="n">Revenue</th>
         <th scope="col" class="n">Cost / purchase</th><th scope="col" class="n">ROAS</th>
       </tr></thead>
       <tbody>{campaign_rows()}</tbody>
@@ -1059,6 +1066,9 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
         <li><b>Purchases and revenue</b> are sales from !summit-2026 leads who touched a Fall Summit
           ad, inside the campaign window. The closing click may be anything; the ad touch is what
           qualifies it. Organic sales carrying the tag are excluded.</li>
+        <li><b>Reg. to sale</b> is purchases divided by registrations: the share of people who
+          signed up and then bought. Page conversion measures the ad and the landing page; this
+          measures what happens after.</li>
         <li><b>ROAS</b> is that revenue divided by spend. Break-even is 1.00x.</li>
       </ul>
     </div>

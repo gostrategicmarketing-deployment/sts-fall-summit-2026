@@ -315,12 +315,6 @@ def main():
     print("pulling tagged leads...")
     lead_rows, leads_per_ad, leads_per_day, paid = tagged_leads()
     print(f"  {len(lead_rows)} tagged, {paid} ad-attributed")
-    # Persist the raw pull. build_dashboard.py cross-checks the derived file against it,
-    # so it has to be the same pull that produced these numbers, not an older snapshot.
-    DATA.mkdir(exist_ok=True)
-    (DATA / "raw_leads_summit2026.json").write_text(
-        json.dumps({"result": lead_rows, "nextPageId": None}))
-
     print("pulling sales...")
     ledger, sales_per_ad, rev_per_ad = tagged_sales(first_day, today, ads)
     print(f"  {len(ledger)} tagged sales, ${sum(l['amount'] for l in ledger):,.2f}")
@@ -485,6 +479,14 @@ def main():
     # like any other. Excluded from every figure, kept in the ledger marked Excluded so
     # the money is visible rather than vanished.
     excluded = [s for s in ledger if not s["counted"]]
+
+    # Persist the raw pull NEXT TO the derived file, not eighteen seconds earlier.
+    # build_dashboard.py cross-checks one against the other, so a build starting inside
+    # that gap saw the new raw leads against the old totals and hard-failed on a
+    # mismatch that did not exist. Same pull, same moment.
+    DATA.mkdir(exist_ok=True)
+    (DATA / "raw_leads_summit2026.json").write_text(
+        json.dumps({"result": lead_rows, "nextPageId": None}))
 
     daily_p = DATA / "daily.json"
     daily_p.write_text(json.dumps(daily, indent=2))
