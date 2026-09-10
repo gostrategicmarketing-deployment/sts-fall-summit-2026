@@ -195,17 +195,29 @@ jobs:
               sys.exit(1)
           PY
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
-      - id: deploy
-        uses: actions/deploy-pages@v4
-
-      - name: Commit the daily history
+      # Pages serves this branch directly. actions/deploy-pages abandoned a half-created
+      # deployment on 2026-09-10 and GitHub then refused every later one for 45 minutes
+      # ("due to in progress deployment"), with cancelling, releasing the deployment
+      # record and a fresh build version all failing to clear it. The link is shared
+      # widely, so publishing cannot depend on a step that can wedge itself and cannot
+      # be unwedged from here. Everything above this line is unchanged: the page is
+      # still built, still redaction-checked, still PII-scanned, still image-checked,
+      # and only then does it become the published page.
+      - name: Publish the page
         run: |
           git config user.name  "gostrategicmarketing-deployment"
           git config user.email "gostrategicmarketing-deployment@users.noreply.github.com"
-          git add -f data/daily.json
-          git diff --staged --quiet || git commit -m "daily history $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push || true
+          cp _site/index.html index.html
+          cp _site/version.json version.json
+          # Tells Pages to serve the files as they are rather than running Jekyll,
+          # which would otherwise decide what to publish for us.
+          touch .nojekyll
+          git add -f index.html version.json .nojekyll data/daily.json
+          [ -d creatives ] && git add -f creatives || true
+          if git diff --staged --quiet; then
+            echo "nothing changed"
+          else
+            git commit -m "publish $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+            echo "published; Pages serves it from main within a minute or so"
+          fi

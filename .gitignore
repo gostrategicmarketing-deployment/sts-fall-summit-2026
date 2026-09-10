@@ -7,7 +7,9 @@ hyros_key.txt
 *.key
 _site/
 .commitmsg
-.commitmsg
-.commitmsg
-index.html
-creatives/
+
+# index.html and creatives/ are NO LONGER ignored. Pages serves this branch
+# directly since 2026-09-10, so the built page and its images have to be in it.
+# Safe to commit: the published build is --redact and, with the purchase ledger
+# gone, carries no buyer name, email or any other personal data at all.
+# The files above this block still hold personal data and must stay ignored.

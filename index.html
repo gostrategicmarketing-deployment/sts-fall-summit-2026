@@ -1,0 +1,1424 @@
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="build-mode" content="redacted">
+<title>Fall Summit 2026 Acquisition Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IM+Fell+Great+Primer:ital@0;1&display=swap">
+<style>
+:root {
+  --sun:#E9B242; --sun-deep:#C8912A; --ink:#35383F; --clay:#B5B5B5;
+  --stone:#F4F4F4; --milk:#FFFFFF;
+  --good:#4A6741; --bad:#8B3A3A;
+  --ground:var(--stone); --surface:var(--milk); --surface-2:#FAFAFA;
+  --text:var(--ink); --text-2:#5E6169; --text-3:#8A8D95;
+  --line:rgba(53,56,63,.14); --line-soft:rgba(53,56,63,.07);
+  --deck-ink-bg:var(--ink); --deck-ink-text:#F7F5F1; --deck-ink-line:rgba(233,178,66,.28);
+  --bar-spend:rgba(53,56,63,.30); --bar-leads:var(--sun);
+  --shadow:0 1px 2px rgba(53,56,63,.06), 0 8px 24px -16px rgba(53,56,63,.30);
+  --f-display:"IM Fell Great Primer", Georgia, "Times New Roman", serif;
+  --f-body:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:#24262B; --surface:#2E313A; --surface-2:#343841;
+    --text:#F0EFEC; --text-2:#B9BCC4; --text-3:#8E929B;
+    --line:rgba(240,239,236,.16); --line-soft:rgba(240,239,236,.08);
+    --deck-ink-bg:#191B1F; --deck-ink-text:#F7F5F1; --deck-ink-line:rgba(233,178,66,.34);
+    --good:#7FA372; --bad:#CC7B7B; --sun-deep:#E9B242;
+    --bar-spend:rgba(240,239,236,.26); --bar-leads:var(--sun);
+    --shadow:0 1px 2px rgba(0,0,0,.30), 0 10px 28px -18px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"] {
+  --ground:#24262B; --surface:#2E313A; --surface-2:#343841;
+  --text:#F0EFEC; --text-2:#B9BCC4; --text-3:#8E929B;
+  --line:rgba(240,239,236,.16); --line-soft:rgba(240,239,236,.08);
+  --deck-ink-bg:#191B1F; --deck-ink-text:#F7F5F1; --deck-ink-line:rgba(233,178,66,.34);
+  --good:#7FA372; --bad:#CC7B7B; --sun-deep:#E9B242;
+  --bar-spend:rgba(240,239,236,.26); --bar-leads:var(--sun);
+  --shadow:0 1px 2px rgba(0,0,0,.30), 0 10px 28px -18px rgba(0,0,0,.75);
+}
+
+*, *::before, *::after { box-sizing:border-box; }
+body { margin:0; background:var(--ground); color:var(--text);
+  font-family:var(--f-body); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; }
+.wrap { max-width:1220px; margin:0 auto; padding:34px 22px 76px; }
+h1,h2,h3 { font-family:var(--f-display); font-weight:400; text-wrap:balance; margin:0; letter-spacing:.01em; }
+:focus-visible { outline:2px solid var(--sun); outline-offset:2px; border-radius:2px; }
+@media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
+
+/* ---- masthead ---- */
+.mast { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
+  gap:20px; padding-bottom:20px; border-bottom:2px solid var(--ink); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mast { border-bottom-color:var(--sun); } }
+:root[data-theme="dark"] .mast { border-bottom-color:var(--sun); }
+.mast-eyebrow { font-size:11px; letter-spacing:.20em; text-transform:uppercase;
+  color:var(--text-3); font-weight:600; display:block; margin-bottom:9px; }
+.mast h1 { font-size:clamp(30px,4.4vw,46px); line-height:1.06; }
+.mast h1 em { font-style:italic; color:var(--sun-deep); }
+.stamp { text-align:right; font-size:12px; color:var(--text-2); line-height:1.75; }
+.stamp b { display:block; font-size:13px; color:var(--text); font-weight:600; }
+.refresh-btn { display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  font-family:var(--f-body); font-size:15px; font-weight:700; letter-spacing:.02em;
+  color:var(--ink); background:var(--sun); border:none; border-radius:4px;
+  padding:13px 26px; min-width:210px; cursor:pointer; margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(53,56,63,.14); transition:filter .12s ease, transform .08s ease; }
+.refresh-btn:hover { filter:brightness(1.07); }
+.refresh-btn:active { transform:translateY(1px); }
+/* Author display wins over the UA [hidden] rule, so say it explicitly or a button the
+   script never wires up still renders, full size and completely dead. */
+.refresh-btn[hidden], .rb-err[hidden] { display:none !important; }
+.refresh-link { text-decoration:none; }
+.rb-ext { font-size:13px; opacity:.75; }
+/* On the published copy this is the headline of the masthead: a static page cannot be
+   refreshed by its reader, so how old it is matters more than anything else up here. */
+.fresh { display:flex; flex-direction:column; align-items:flex-end; gap:1px; margin-bottom:10px; }
+.fresh-lab { font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--text-3); font-weight:700; }
+.fresh-time { font-family:var(--f-display); font-size:clamp(26px,3.4vw,36px); line-height:1.05;
+  color:var(--text); font-variant-numeric:tabular-nums; }
+.fresh-date { font-size:12.5px; color:var(--text-2); }
+.refresh-btn[disabled] { cursor:progress; filter:saturate(.45); }
+.rb-dot { width:9px; height:9px; border-radius:50%; background:var(--ink); flex:0 0 auto; }
+.refresh-btn[disabled] .rb-dot { animation:rbpulse .9s ease-in-out infinite; }
+@keyframes rbpulse { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+.rb-err { display:block; font-size:12px; color:var(--bad); max-width:34ch;
+  margin-bottom:8px; text-align:right; }
+
+/* ---- refresh progress ---- */
+/* A 21-second wait needs more than a pulsing dot. The bar advances stage by stage and
+   creeps within a stage, so it never looks stalled; the decks dim so it is obvious the
+   figures on screen are the old ones until the reload lands. */
+#rbBar { position:fixed; top:0; left:0; height:3px; width:0; z-index:60;
+  background:linear-gradient(90deg, var(--sun-deep), var(--sun));
+  box-shadow:0 0 10px rgba(233,178,66,.7); opacity:0;
+  transition:width .45s cubic-bezier(.22,.61,.36,1), opacity .25s ease; }
+body.is-refreshing #rbBar { opacity:1; }
+body.is-refreshing .deck .kpi-val,
+body.is-refreshing .funnel .fn-val { opacity:.38; transition:opacity .3s ease; }
+body.is-refreshing .deck-today { position:relative; overflow:hidden; }
+body.is-refreshing .deck-today::after {
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(100deg, transparent 20%, rgba(233,178,66,.13) 50%, transparent 80%);
+  background-size:220% 100%; animation:rbsweep 1.5s linear infinite; }
+@keyframes rbsweep { from { background-position:120% 0; } to { background-position:-120% 0; } }
+.rb-ring { width:15px; height:15px; flex:0 0 auto; border-radius:50%;
+  border:2px solid rgba(53,56,63,.28); border-top-color:var(--ink);
+  animation:rbspin .7s linear infinite; display:none; }
+.refresh-btn[disabled] .rb-ring { display:block; }
+.refresh-btn[disabled] .rb-dot { display:none; }
+@keyframes rbspin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .rb-ring { animation:none; border-top-color:var(--ink); }
+  body.is-refreshing .deck-today::after { animation:none; }
+  #rbBar { transition:opacity .2s ease; }
+}
+
+/* ---- launch notice ---- */
+.notice { display:flex; gap:13px; align-items:flex-start; margin-top:24px; padding:15px 18px;
+  background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--sun);
+  border-radius:3px; }
+.notice p { margin:0; font-size:14px; color:var(--text-2); }
+.notice b { color:var(--text); }
+.notice .n-ico { font-family:var(--f-display); font-size:22px; line-height:1; color:var(--sun-deep); }
+
+/* ---- sections ---- */
+section { margin-top:52px; }
+.sec-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:14px; margin-bottom:16px; }
+.sec-head h2 { font-size:clamp(21px,2.5vw,27px); }
+.sec-head p { margin:0; color:var(--text-2); font-size:13.5px; max-width:62ch; }
+
+/* ---- KPI decks ---- */
+.deck { border-radius:4px; padding:22px 24px 24px; }
+.deck-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:12px; margin-bottom:18px; }
+.deck-head h2 { font-size:25px; }
+.deck-tag { font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:600; }
+.deck-note { margin:0; font-size:12.5px; }
+.grid { display:grid; gap:1px; grid-template-columns:repeat(5,1fr); }
+@media (max-width:900px) { .grid { grid-template-columns:repeat(2,1fr); } }
+.kpi { display:flex; flex-direction:column; gap:3px; padding:14px 16px 15px; }
+.kpi-lab { font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:600; }
+.kpi-val { font-size:clamp(23px,3vw,31px); font-weight:600; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums; line-height:1.12; }
+.kpi-sub { font-size:11.5px; line-height:1.35; }
+
+.deck-today { background:var(--deck-ink-bg); color:var(--deck-ink-text); box-shadow:var(--shadow); }
+.deck-today h2 { color:var(--deck-ink-text); }
+.deck-today .deck-tag { color:var(--sun); }
+.deck-today .deck-note { color:rgba(247,245,241,.62); }
+.deck-today .grid { background:var(--deck-ink-line); }
+.deck-today .kpi { background:var(--deck-ink-bg); }
+.deck-today .kpi-lab { color:rgba(247,245,241,.60); }
+.deck-today .kpi-val { color:var(--sun); }
+.deck-today .kpi-sub { color:rgba(247,245,241,.48); }
+
+.deck-run { background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); }
+.deck-run .deck-tag { color:var(--sun-deep); }
+.deck-run .deck-note { color:var(--text-3); }
+.deck-run .grid { background:var(--line-soft); }
+.deck-run .kpi { background:var(--surface); }
+.deck-run .kpi-lab { color:var(--text-3); }
+.deck-run .kpi-val { color:var(--text); }
+.deck-run .kpi-sub { color:var(--text-3); }
+.deck-stack { display:flex; flex-direction:column; gap:16px; }
+
+/* ---- funnel ---- */
+.funnel { display:flex; align-items:stretch; flex-wrap:wrap; gap:0;
+  background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:6px; }
+.fn-step { flex:1 1 130px; display:flex; flex-direction:column; gap:2px; padding:16px 18px; }
+.fn-val { font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.fn-lab { font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--text-3); font-weight:600; }
+.fn-gap { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:1px;
+  padding:0 14px; border-left:1px solid var(--line-soft); border-right:1px solid var(--line-soft); min-width:96px; }
+.fn-rate { font-size:15px; font-weight:700; color:var(--sun-deep); font-variant-numeric:tabular-nums; }
+.fn-rname { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); }
+
+/* ---- tables ---- */
+.tw { overflow-x:auto; background:var(--surface); border:1px solid var(--line);
+  border-radius:4px; box-shadow:var(--shadow); }
+table { border-collapse:collapse; width:100%; min-width:900px; }
+thead th { position:sticky; top:0; background:var(--surface-2); text-align:left;
+  font-size:10.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--text-3);
+  font-weight:700; padding:11px 12px; border-bottom:1px solid var(--line); white-space:nowrap; z-index:1; }
+thead th.n { text-align:right; }
+tbody td, tbody th { padding:12px; border-bottom:1px solid var(--line-soft); vertical-align:top;
+  font-weight:400; text-align:left; }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom:none; }
+td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+td.hi { font-weight:600; }
+td.mono, code.seq { font-family:var(--f-mono); }
+td.rk { font-family:var(--f-display); font-size:19px; color:var(--text-3); width:42px; text-align:center; }
+.row-idle { opacity:.62; }
+.row-total th, .row-total td { background:var(--surface-2); font-weight:600;
+  border-top:2px solid var(--ink); }
+/* A subtotal closes its block without competing with the grand total: same weight,
+   a hairline instead of the heavy rule, and no fill. */
+.row-sub th, .row-sub td { font-weight:600; border-top:1px solid var(--ink);
+  border-bottom:1px solid var(--line); }
+.row-sub .slot { font-size:15px; color:var(--text-2); }
+.row-empty th { color:var(--text-3); }
+.nil { color:var(--text-3); }
+
+.slot { display:block; font-family:var(--f-display); font-size:18px; line-height:1.2; }
+.cname { display:block; font-size:12px; color:var(--text-2); margin-top:1px; }
+.adname { display:block; font-size:14px; font-weight:500; line-height:1.35; max-width:46ch; }
+.cmeta { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:5px;
+  font-size:11.5px; color:var(--text-3); }
+.sep { color:var(--clay); }
+code.seq { font-size:11px; background:var(--surface-2); border:1px solid var(--line-soft);
+  padding:1px 6px; border-radius:3px; color:var(--text-2); }
+.acct { font-size:10px; letter-spacing:.09em; font-weight:700; padding:2px 6px; border-radius:2px; }
+.acct-sts { background:rgba(233,178,66,.20); color:var(--sun-deep); }
+.acct-tsa { background:rgba(74,103,65,.16); color:var(--good); }
+
+.pill { display:inline-block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  font-weight:700; padding:3px 9px; border-radius:99px; white-space:nowrap; }
+.pill-live { background:rgba(74,103,65,.15); color:var(--good); }
+.pill-idle { background:rgba(181,181,181,.22); color:var(--text-3); }
+.pill-out { background:rgba(139,58,58,.14); color:var(--bad); }
+
+.flags { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.flag { font-size:11px; padding:2px 8px; border-radius:3px; line-height:1.4; }
+.flag-buy { background:var(--sun); color:#2A2206; font-weight:600; }
+.flag-note { background:var(--surface-2); color:var(--text-2); border:1px solid var(--line-soft); }
+.flag-out { background:rgba(139,58,58,.12); color:var(--bad); }
+.why { font-size:12.5px; color:var(--text-2); max-width:52ch; }
+
+.bar { display:block; height:3px; border-radius:2px; background:var(--line-soft); margin-top:6px; min-width:54px; }
+.bar > span { display:block; height:100%; border-radius:2px; }
+.bar-spend > span { background:var(--bar-spend); }
+.bar-leads > span { background:var(--bar-leads); }
+
+/* ---- creative thumbnails ---- */
+td.tc, th.tc { width:76px; padding-right:0; }
+.thumb { display:block; position:relative; width:64px; height:64px; padding:0; border:1px solid var(--line);
+  border-radius:3px; overflow:hidden; background:var(--surface-2); cursor:zoom-in; line-height:0;
+  transition:transform .12s ease, border-color .12s ease; }
+.thumb:hover { transform:scale(1.06); border-color:var(--sun); }
+.thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.thumb-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:17px; text-shadow:0 1px 5px rgba(0,0,0,.85); background:rgba(0,0,0,.22); }
+.thumb-missing { display:flex; align-items:center; justify-content:center; cursor:default;
+  font-size:9px; line-height:1.25; text-align:center; color:var(--text-3); text-transform:uppercase;
+  letter-spacing:.06em; }
+.thumb-missing:hover { transform:none; border-color:var(--line); }
+.xlinks { display:flex; flex-wrap:wrap; gap:12px; margin-top:6px; }
+.xlink { font-size:11.5px; color:var(--sun-deep); text-decoration:none; border-bottom:1px solid currentColor;
+  padding-bottom:1px; }
+.xlink:hover { color:var(--text); }
+
+/* ---- lightbox ---- */
+.lb { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center;
+  background:rgba(20,21,25,.90); padding:28px; }
+.lb[open], .lb.on { display:flex; }
+.lb-inner { display:flex; flex-direction:column; gap:12px; max-width:min(760px,92vw); max-height:92vh; }
+.lb-img { max-width:100%; max-height:74vh; object-fit:contain; border-radius:4px;
+  background:#111; box-shadow:0 20px 60px -20px rgba(0,0,0,.9); }
+.lb-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; color:#F7F5F1; }
+.lb-name { font-family:var(--f-display); font-size:17px; flex:1 1 240px; line-height:1.3; }
+.lb-dims { font-family:var(--f-mono); font-size:11px; color:rgba(247,245,241,.55); }
+.lb-bar a { font-size:12px; color:var(--sun); text-decoration:none; border-bottom:1px solid currentColor; }
+.lb-close { background:none; border:1px solid rgba(247,245,241,.35); color:#F7F5F1; cursor:pointer;
+  font-size:12px; padding:5px 12px; border-radius:3px; font-family:var(--f-body); }
+.lb-close:hover { border-color:var(--sun); color:var(--sun); }
+
+/* ---- hero ad ---- */
+.hero-wrap { margin-bottom:16px; }
+.hero-grid { display:grid; gap:12px; margin-top:9px;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); }
+.hero-ad { background:var(--deck-ink-bg); color:var(--deck-ink-text); border-radius:4px;
+  padding:20px 22px; box-shadow:var(--shadow); border-left:4px solid var(--sun); }
+.hero-eyebrow { font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--sun-deep); font-weight:700; }
+.hero-body { display:flex; gap:16px; align-items:flex-start; }
+.hero-copy { flex:1 1 auto; min-width:0; }
+.hero-body .thumb { width:84px; height:84px; flex:0 0 auto; border-color:rgba(247,245,241,.22); }
+.hero-name { font-family:var(--f-display); font-size:clamp(18px,2.2vw,23px); margin:0; line-height:1.24; }
+.hero-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:9px 0 0;
+  font-size:11.5px; color:rgba(247,245,241,.58); }
+.hero-meta code.seq { background:rgba(247,245,241,.09); border-color:rgba(247,245,241,.14);
+  color:rgba(247,245,241,.80); }
+.hero-stats { display:flex; flex-wrap:wrap; gap:24px; margin-top:16px;
+  padding-top:15px; border-top:1px solid var(--deck-ink-line); }
+.hero-stats span { display:flex; flex-direction:column; font-size:11px; letter-spacing:.11em;
+  text-transform:uppercase; color:rgba(247,245,241,.55); font-weight:600; }
+.hero-stats b { font-size:25px; letter-spacing:-.02em; color:var(--sun); font-weight:600;
+  font-variant-numeric:tabular-nums; text-transform:none; letter-spacing:normal; }
+
+/* ---- method ---- */
+.method { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1px;
+  background:var(--line-soft); border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+.mcard { background:var(--surface); padding:18px 20px; }
+.mcard h3 { font-size:16px; margin-bottom:8px; }
+.mcard p, .mcard li { font-size:13px; color:var(--text-2); margin:0 0 7px; }
+.mcard ul { margin:0; padding-left:17px; }
+.mcard li { margin-bottom:6px; }
+.mcard li:last-child, .mcard p:last-child { margin-bottom:0; }
+.mcard b { color:var(--text); font-weight:600; }
+.mcard code.seq { margin-left:6px; }
+.mcard ul.plain { list-style:none; padding:0; }
+.mcard ul.plain li { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.mcard-refresh { border-left:3px solid var(--sun); }
+.askline { display:inline-block; font-family:var(--f-mono); font-size:12px; background:var(--surface-2);
+  border:1px solid var(--line); border-left:3px solid var(--sun); border-radius:3px;
+  padding:9px 12px; color:var(--text) !important; }
+footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
+  font-size:12px; color:var(--text-3); display:flex; flex-wrap:wrap; gap:8px 20px; }
+</style>
+
+<div id="rbBar" role="progressbar" aria-label="Refresh progress" aria-hidden="true"></div>
+<div class="wrap">
+<header class="mast">
+  <div>
+    <span class="mast-eyebrow">School of Traditional Skills &middot; paid acquisition</span>
+    <h1>Fall Summit 2026<br><em>Acquisition Board</em></h1>
+  </div>
+  <div class="stamp">
+    
+    <div class="fresh"><span class="fresh-lab">Data updated</span><span class="fresh-time">4:31 am PDT</span><span class="fresh-date">Thursday 10 September 2026</span></div>
+    Times are the ad account's<br>
+    Registrations and sales: Hyros<br>
+    Spend and clicks: Meta<br>
+    Sales need a Fall Summit ad touch
+  </div>
+</header>
+
+<div class="notice">
+  <span class="n-ico">&#9662;</span>
+  <p><b>Day 4 of delivery.</b> <b>Just Today</b> is 2026-09-10 on its own, midnight to now in the account time zone. <b>Running Total</b> covers 2026-09-07 to 2026-09-10, every day the Fall Summit campaigns have run.</p>
+</div>
+
+<section>
+  <div class="deck-stack">
+    <div class="deck deck-today">
+      <div class="deck-head">
+        <h2>Just Today</h2>
+        <span class="deck-tag">2026-09-10</span>
+        <p class="deck-note">Midnight to now, account time zone</p>
+      </div>
+      <div class="grid"><div class="kpi"><span class="kpi-lab">Leads</span><span class="kpi-val">788</span><span class="kpi-sub">registrations tagged !summit-2026</span></div><div class="kpi"><span class="kpi-lab">Cost per lead</span><span class="kpi-val">$1.39</span></div><div class="kpi"><span class="kpi-lab">Link clicks</span><span class="kpi-val">2,545</span></div><div class="kpi"><span class="kpi-lab">Cost per click</span><span class="kpi-val">$0.43</span></div><div class="kpi"><span class="kpi-lab">Spend</span><span class="kpi-val">$1,098.76</span><span class="kpi-sub">both ad accounts</span></div><div class="kpi"><span class="kpi-lab">Page conversion</span><span class="kpi-val">31.0%</span><span class="kpi-sub">leads &divide; link clicks</span></div><div class="kpi"><span class="kpi-lab">Purchases</span><span class="kpi-val">14</span></div><div class="kpi"><span class="kpi-lab">Revenue</span><span class="kpi-val">$311.00</span></div><div class="kpi"><span class="kpi-lab">Cost per purchase</span><span class="kpi-val">$78.48</span></div><div class="kpi"><span class="kpi-lab">ROAS</span><span class="kpi-val">0.28x</span><span class="kpi-sub">break-even at 1.00x</span></div></div>
+    </div>
+    <div class="deck deck-run">
+      <div class="deck-head">
+        <h2>Running Total</h2>
+        <span class="deck-tag">2026-09-07 to 2026-09-10</span>
+        <p class="deck-note">Every day the Fall Summit campaigns have run</p>
+      </div>
+      <div class="grid"><div class="kpi"><span class="kpi-lab">Leads</span><span class="kpi-val">9,367</span><span class="kpi-sub">registrations tagged !summit-2026</span></div><div class="kpi"><span class="kpi-lab">Cost per lead</span><span class="kpi-val">$1.32</span></div><div class="kpi"><span class="kpi-lab">Link clicks</span><span class="kpi-val">31,514</span></div><div class="kpi"><span class="kpi-lab">Cost per click</span><span class="kpi-val">$0.39</span></div><div class="kpi"><span class="kpi-lab">Spend</span><span class="kpi-val">$12,384.39</span><span class="kpi-sub">both ad accounts</span></div><div class="kpi"><span class="kpi-lab">Page conversion</span><span class="kpi-val">29.7%</span><span class="kpi-sub">leads &divide; link clicks</span></div><div class="kpi"><span class="kpi-lab">Purchases</span><span class="kpi-val">313</span></div><div class="kpi"><span class="kpi-lab">Revenue</span><span class="kpi-val">$6,848.00</span></div><div class="kpi"><span class="kpi-lab">Cost per purchase</span><span class="kpi-val">$39.57</span></div><div class="kpi"><span class="kpi-lab">ROAS</span><span class="kpi-val">0.55x</span><span class="kpi-sub">break-even at 1.00x</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>Registration funnel</h2>
+    <p>Running total, both accounts. Rates are the step-to-step conversion.</p>
+  </div>
+  <div class="funnel"><div class="fn-step"><span class="fn-val">1,049,372</span><span class="fn-lab">Impressions</span></div><div class="fn-gap"><span class="fn-rate">3.0%</span><span class="fn-rname">click-through</span></div><div class="fn-step"><span class="fn-val">31,514</span><span class="fn-lab">Link clicks</span></div><div class="fn-gap"><span class="fn-rate">29.7%</span><span class="fn-rname">page conversion</span></div><div class="fn-step"><span class="fn-val">9,367</span><span class="fn-lab">Leads</span></div><div class="fn-gap"><span class="fn-rate">3.3%</span><span class="fn-rname">lead to sale</span></div><div class="fn-step"><span class="fn-val">313</span><span class="fn-lab">Purchases</span></div></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>Campaigns</h2>
+    <p>Running total only, one row per campaign. Yellow bars are share of leads, grey bars share of spend.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th scope="col">Campaign</th><th scope="col">Status</th>
+        <th scope="col" class="n">Spend</th><th scope="col" class="n">Leads</th>
+        <th scope="col" class="n">Cost / lead</th><th scope="col" class="n">Link clicks</th>
+        <th scope="col" class="n">Cost / click</th><th scope="col" class="n">Page conv.</th>
+        <th scope="col" class="n">Purchases</th><th scope="col" class="n">Reg. to sale</th>
+        <th scope="col" class="n">Revenue</th>
+        <th scope="col" class="n">Cost / purchase</th><th scope="col" class="n">ROAS</th>
+      </tr></thead>
+      <tbody><tr class="">
+  <th scope="row">
+    <span class="slot">Page 1</span>
+    <span class="cname">TOF | Fall Summit 2026 | Page 1 | ABO</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span>5 of 6 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$456.57<span class="bar bar-spend"><span style="width:17.9%"></span></span></td>
+  <td class="n">198<span class="bar bar-leads"><span style="width:10.2%"></span></span></td>
+  <td class="n">$2.31</td>
+  <td class="n">732</td>
+  <td class="n">$0.62</td>
+  <td class="n">27.0%</td>
+  <td class="n">3</td>
+  <td class="n">1.5%</td>
+  <td class="n">$57.00</td>
+  <td class="n">$152.19</td>
+  <td class="n hi">0.12x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Page 2</span>
+    <span class="cname">TOF | Fall Summit 2026 | Page 2 | ABO</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span>5 of 5 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$335.30<span class="bar bar-spend"><span style="width:13.1%"></span></span></td>
+  <td class="n">151<span class="bar bar-leads"><span style="width:7.8%"></span></span></td>
+  <td class="n">$2.22</td>
+  <td class="n">413</td>
+  <td class="n">$0.81</td>
+  <td class="n">36.6%</td>
+  <td class="n">5</td>
+  <td class="n">3.3%</td>
+  <td class="n">$104.00</td>
+  <td class="n">$67.06</td>
+  <td class="n hi">0.31x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Page 3</span>
+    <span class="cname">TOF | Fall Summit 2026 | Page 3 | ABO</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span>8 of 8 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$524.35<span class="bar bar-spend"><span style="width:20.5%"></span></span></td>
+  <td class="n">244<span class="bar bar-leads"><span style="width:12.5%"></span></span></td>
+  <td class="n">$2.15</td>
+  <td class="n">911</td>
+  <td class="n">$0.58</td>
+  <td class="n">26.8%</td>
+  <td class="n">13</td>
+  <td class="n">5.3%</td>
+  <td class="n">$265.00</td>
+  <td class="n">$40.33</td>
+  <td class="n hi">0.51x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Page 4</span>
+    <span class="cname">TOF | Fall Summit 2026 | Page 4 | ABO</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span>8 of 8 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$1,199.45<span class="bar bar-spend"><span style="width:46.9%"></span></span></td>
+  <td class="n">577<span class="bar bar-leads"><span style="width:29.7%"></span></span></td>
+  <td class="n">$2.08</td>
+  <td class="n">2,041</td>
+  <td class="n">$0.59</td>
+  <td class="n">28.3%</td>
+  <td class="n">15</td>
+  <td class="n">2.6%</td>
+  <td class="n">$339.00</td>
+  <td class="n">$79.96</td>
+  <td class="n hi">0.28x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Page 5</span>
+    <span class="cname">TOF | Fall Summit 2026 | Page 5 | ABO</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span>4 of 4 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$200.63<span class="bar bar-spend"><span style="width:7.8%"></span></span></td>
+  <td class="n">69<span class="bar bar-leads"><span style="width:3.5%"></span></span></td>
+  <td class="n">$2.91</td>
+  <td class="n">359</td>
+  <td class="n">$0.56</td>
+  <td class="n">19.2%</td>
+  <td class="n">1</td>
+  <td class="n">1.4%</td>
+  <td class="n">$19.00</td>
+  <td class="n">$200.63</td>
+  <td class="n hi">0.09x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">General Hooks</span>
+    <span class="cname">TOF | Fall Summit 2026 | General Hooks</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span><span class="acct acct-tsa">TSA</span>13 of 13 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$1,471.23<span class="bar bar-spend"><span style="width:57.6%"></span></span></td>
+  <td class="n">1,145<span class="bar bar-leads"><span style="width:58.9%"></span></span></td>
+  <td class="n">$1.28</td>
+  <td class="n">2,908</td>
+  <td class="n">$0.51</td>
+  <td class="n">39.4%</td>
+  <td class="n">23</td>
+  <td class="n">2.0%</td>
+  <td class="n">$509.00</td>
+  <td class="n">$63.97</td>
+  <td class="n hi">0.35x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Grid</span>
+    <span class="cname">TOF | Fall Summit 2026 | Grid Photos</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span><span class="acct acct-tsa">TSA</span>10 of 10 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$1,748.87<span class="bar bar-spend"><span style="width:68.4%"></span></span></td>
+  <td class="n">1,734<span class="bar bar-leads"><span style="width:89.2%"></span></span></td>
+  <td class="n">$1.01</td>
+  <td class="n">5,885</td>
+  <td class="n">$0.30</td>
+  <td class="n">29.5%</td>
+  <td class="n">93</td>
+  <td class="n">5.4%</td>
+  <td class="n">$2,020.00</td>
+  <td class="n">$18.81</td>
+  <td class="n hi">1.16x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Video</span>
+    <span class="cname">TOF | Fall Summit 2026 | Videos | ABO</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span><span class="acct acct-tsa">TSA</span>10 of 11 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$1,464.01<span class="bar bar-spend"><span style="width:57.3%"></span></span></td>
+  <td class="n">1,548<span class="bar bar-leads"><span style="width:79.6%"></span></span></td>
+  <td class="n">$0.95</td>
+  <td class="n">3,901</td>
+  <td class="n">$0.38</td>
+  <td class="n">39.7%</td>
+  <td class="n">45</td>
+  <td class="n">2.9%</td>
+  <td class="n">$972.00</td>
+  <td class="n">$32.53</td>
+  <td class="n hi">0.66x</td>
+</tr>
+<tr class="row-sub">
+  <th scope="row"><span class="slot">8 named campaigns</span></th>
+  <td class="st"></td>
+  <td class="n">$7,400.41</td>
+  <td class="n">5,666</td>
+  <td class="n">$1.31</td>
+  <td class="n">17,150</td>
+  <td class="n">$0.43</td>
+  <td class="n">33.0%</td>
+  <td class="n">198</td>
+  <td class="n">3.5%</td>
+  <td class="n">$4,285.00</td>
+  <td class="n">$37.38</td>
+  <td class="n hi">0.58x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Scaling</span>
+    <span class="cname">TOF | Fall Summit 2026 | Scaling</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span>1 of 1 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$2,556.41<span class="bar bar-spend"><span style="width:100.0%"></span></span></td>
+  <td class="n">1,945<span class="bar bar-leads"><span style="width:100.0%"></span></span></td>
+  <td class="n">$1.31</td>
+  <td class="n">7,120</td>
+  <td class="n">$0.36</td>
+  <td class="n">27.3%</td>
+  <td class="n">51</td>
+  <td class="n">2.6%</td>
+  <td class="n">$1,185.00</td>
+  <td class="n">$50.13</td>
+  <td class="n hi">0.46x</td>
+</tr>
+<tr class="">
+  <th scope="row">
+    <span class="slot">Scaling 2</span>
+    <span class="cname">TOF | Fall Summit 2026 | Scaling 2 | ABO</span>
+    <span class="cmeta"><span class="acct acct-tsa">TSA</span>1 of 2 ad sets live</span>
+  </th>
+  <td class="st"><span class="pill pill-live">Delivering</span></td>
+  <td class="n">$2,427.57<span class="bar bar-spend"><span style="width:95.0%"></span></span></td>
+  <td class="n">1,756<span class="bar bar-leads"><span style="width:90.3%"></span></span></td>
+  <td class="n">$1.38</td>
+  <td class="n">7,244</td>
+  <td class="n">$0.34</td>
+  <td class="n">24.2%</td>
+  <td class="n">64</td>
+  <td class="n">3.6%</td>
+  <td class="n">$1,378.00</td>
+  <td class="n">$37.93</td>
+  <td class="n hi">0.57x</td>
+</tr>
+<tr class="row-sub">
+  <th scope="row"><span class="slot">2 scaling campaigns</span></th>
+  <td class="st"></td>
+  <td class="n">$4,983.98</td>
+  <td class="n">3,701</td>
+  <td class="n">$1.35</td>
+  <td class="n">14,364</td>
+  <td class="n">$0.35</td>
+  <td class="n">25.8%</td>
+  <td class="n">115</td>
+  <td class="n">3.1%</td>
+  <td class="n">$2,563.00</td>
+  <td class="n">$43.34</td>
+  <td class="n hi">0.51x</td>
+</tr>
+<tr class="row-total">
+  <th scope="row"><span class="slot">All campaigns</span><span class="cmeta">10 campaigns, both accounts</span></th>
+  <td class="st"></td>
+  <td class="n">$12,384.39</td>
+  <td class="n">9,367</td>
+  <td class="n">$1.32</td>
+  <td class="n">31,514</td>
+  <td class="n">$0.39</td>
+  <td class="n">29.7%</td>
+  <td class="n">313</td>
+  <td class="n">3.3%</td>
+  <td class="n">$6,848.00</td>
+  <td class="n">$39.57</td>
+  <td class="n hi">0.55x</td>
+</tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>Top 10 image ads</h2>
+    <p>Ranked by tagged registrations, cheapest lead breaking ties. Click any preview to see the creative full size.</p>
+  </div>
+  <div class="hero-wrap"><span class="hero-eyebrow">The 10 highest-earning of the 105 creatives that have produced a sale</span><div class="hero-grid"><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/23860365141920791.jpg" data-name="Grid Photos | Style 4 | Image 13 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365141920791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 13 | AC 1"><img src="creatives/23860365141920791.jpg" alt="Grid Photos | Style 4 | Image 13 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 4 | Image 13 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0629</code><span class="acct acct-tsa">TSA</span>Scaling 2 campaign<span class="sep">&middot;</span>TSA Scaling</p>
+  <div class="hero-stats">
+    <span><b>$528.00</b>revenue</span>
+    <span><b>$1,102.67</b>spend</span>
+    <span><b>0.48x</b>ROAS</span>
+    <span><b>734</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/23860365142010791.jpg" data-name="Grid Photos | Style 4 | Image 04 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365142010791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 04 | AC 1"><img src="creatives/23860365142010791.jpg" alt="Grid Photos | Style 4 | Image 04 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 4 | Image 04 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0247</code><span class="acct acct-tsa">TSA</span>Scaling 2 campaign<span class="sep">&middot;</span>TSA Scaling</p>
+  <div class="hero-stats">
+    <span><b>$349.00</b>revenue</span>
+    <span><b>$558.46</b>spend</span>
+    <span><b>0.62x</b>ROAS</span>
+    <span><b>418</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/23860353554810791.jpg" data-name="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860353554810791" data-watch="https://www.facebook.com/schooloftraditionalskills/videos/921090587286970/" data-dims="228 &times; 128" aria-label="Enlarge creative: Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy"><img src="creatives/23860353554810791.jpg" alt="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" loading="lazy" width="64" height="64" decoding="async"><span class="thumb-play" aria-hidden="true">&#9654;</span></button>
+  <div class="hero-copy">
+  <p class="hero-name">Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy</p>
+  <p class="hero-meta"><span class="acct acct-tsa">TSA</span>Video campaign<span class="sep">&middot;</span>Video | Style 3 | AC 1</p>
+  <div class="hero-stats">
+    <span><b>$312.00</b>revenue</span>
+    <span><b>$259.02</b>spend</span>
+    <span><b>1.20x</b>ROAS</span>
+    <span><b>425</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/120256154047480602.jpg" data-name="Grid Photos | Style 4 | Image 12 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047480602" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 12 | AC 1"><img src="creatives/120256154047480602.jpg" alt="Grid Photos | Style 4 | Image 12 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 4 | Image 12 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0628</code><span class="acct acct-sts">STS</span>Scaling campaign<span class="sep">&middot;</span>Scaling Campaign 1</p>
+  <div class="hero-stats">
+    <span><b>$283.00</b>revenue</span>
+    <span><b>$618.23</b>spend</span>
+    <span><b>0.46x</b>ROAS</span>
+    <span><b>479</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/120256153237970602.jpg" data-name="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256153237970602" data-watch="https://www.facebook.com/watch/?v=921090587286970" data-dims="64 &times; 64" aria-label="Enlarge creative: Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy"><img src="creatives/120256153237970602.jpg" alt="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" loading="lazy" width="64" height="64" decoding="async"><span class="thumb-play" aria-hidden="true">&#9654;</span></button>
+  <div class="hero-copy">
+  <p class="hero-name">Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy</p>
+  <p class="hero-meta"><span class="acct acct-sts">STS</span>Video campaign<span class="sep">&middot;</span>Video | Style 3 | AC 1</p>
+  <div class="hero-stats">
+    <span><b>$254.00</b>revenue</span>
+    <span><b>$135.52</b>spend</span>
+    <span><b>1.87x</b>ROAS</span>
+    <span><b>266</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/120256154047370602.jpg" data-name="Grid Photos | Style 4 | Image 08 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047370602" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 08 | AC 1"><img src="creatives/120256154047370602.jpg" alt="Grid Photos | Style 4 | Image 08 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 4 | Image 08 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0624</code><span class="acct acct-sts">STS</span>Scaling campaign<span class="sep">&middot;</span>Scaling Campaign 1</p>
+  <div class="hero-stats">
+    <span><b>$244.00</b>revenue</span>
+    <span><b>$702.82</b>spend</span>
+    <span><b>0.35x</b>ROAS</span>
+    <span><b>535</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/120256153213280602.jpg" data-name="Grid Photos | Style 1 | Image 12 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256153213280602" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 1 | Image 12 | AC 1"><img src="creatives/120256153213280602.jpg" alt="Grid Photos | Style 1 | Image 12 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 1 | Image 12 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0603</code><span class="acct acct-sts">STS</span>Grid campaign<span class="sep">&middot;</span>Grid | Style 1 | AC 1</p>
+  <div class="hero-stats">
+    <span><b>$227.00</b>revenue</span>
+    <span><b>$97.80</b>spend</span>
+    <span><b>2.32x</b>ROAS</span>
+    <span><b>90</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/23860330799760791.jpg" data-name="Grid Photos | Style 3 | Image 09 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860330799760791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 3 | Image 09 | AC 1"><img src="creatives/23860330799760791.jpg" alt="Grid Photos | Style 3 | Image 09 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 3 | Image 09 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0242</code><span class="acct acct-tsa">TSA</span>Grid campaign<span class="sep">&middot;</span>Grid | Style 3 | AC 1</p>
+  <div class="hero-stats">
+    <span><b>$217.00</b>revenue</span>
+    <span><b>$174.74</b>spend</span>
+    <span><b>1.24x</b>ROAS</span>
+    <span><b>182</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/23860347240500791.jpg" data-name="Grid Photos | Style 1 | Image 02 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860347240500791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 1 | Image 02 | AC 1"><img src="creatives/23860347240500791.jpg" alt="Grid Photos | Style 1 | Image 02 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 1 | Image 02 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0220</code><span class="acct acct-tsa">TSA</span>Grid campaign<span class="sep">&middot;</span>Grid | Style 1 | AC 1 - Copy</p>
+  <div class="hero-stats">
+    <span><b>$217.00</b>revenue</span>
+    <span><b>$38.30</b>spend</span>
+    <span><b>5.67x</b>ROAS</span>
+    <span><b>81</b>leads</span>
+  </div>
+  </div></div>
+</div><div class="hero-ad">
+  <div class="hero-body">
+  <button type="button" class="thumb" data-full="creatives/120256154047350602.jpg" data-name="Grid Photos | Style 3 | Image 09 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047350602" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 3 | Image 09 | AC 1"><img src="creatives/120256154047350602.jpg" alt="Grid Photos | Style 3 | Image 09 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button>
+  <div class="hero-copy">
+  <p class="hero-name">Grid Photos | Style 3 | Image 09 | AC 1</p>
+  <p class="hero-meta"><code class="seq">sts0242</code><span class="acct acct-sts">STS</span>Scaling campaign<span class="sep">&middot;</span>Scaling Campaign 1</p>
+  <div class="hero-stats">
+    <span><b>$187.00</b>revenue</span>
+    <span><b>$299.74</b>spend</span>
+    <span><b>0.62x</b>ROAS</span>
+    <span><b>233</b>leads</span>
+  </div>
+  </div></div>
+</div></div></div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th scope="col" class="rk">#</th><th scope="col" class="tc">Preview</th><th scope="col">Creative</th>
+        <th scope="col" class="n">Leads</th><th scope="col" class="n">Cost / lead</th>
+        <th scope="col" class="n">Spend</th><th scope="col" class="n">Clicks</th>
+        <th scope="col" class="n">Page conv.</th><th scope="col" class="n">Impressions</th>
+        <th scope="col" class="n">Purch.</th><th scope="col" class="n">Revenue</th>
+      </tr></thead>
+      <tbody><tr>
+  <td class="rk">1</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860365141920791.jpg" data-name="Grid Photos | Style 4 | Image 13 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365141920791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 13 | AC 1"><img src="creatives/23860365141920791.jpg" alt="Grid Photos | Style 4 | Image 13 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 4 | Image 13 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0629</code><span class="acct acct-tsa">TSA</span>Scaling 2<span class="sep">&middot;</span>TSA Scaling</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365141920791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">734<span class="bar bar-leads"><span style="width:100.0%"></span></span></td>
+  <td class="n">$1.50</td>
+  <td class="n">$1,102.67</td>
+  <td class="n">3,010</td>
+  <td class="n">24.4%</td>
+  <td class="n">105,715</td>
+  <td class="n">24</td>
+  <td class="n">$528.00</td>
+</tr>
+<tr>
+  <td class="rk">2</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/120256154047370602.jpg" data-name="Grid Photos | Style 4 | Image 08 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047370602" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 08 | AC 1"><img src="creatives/120256154047370602.jpg" alt="Grid Photos | Style 4 | Image 08 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 4 | Image 08 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0624</code><span class="acct acct-sts">STS</span>Scaling<span class="sep">&middot;</span>Scaling Campaign 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047370602" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">535<span class="bar bar-leads"><span style="width:72.9%"></span></span></td>
+  <td class="n">$1.31</td>
+  <td class="n">$702.82</td>
+  <td class="n">1,986</td>
+  <td class="n">26.9%</td>
+  <td class="n">69,109</td>
+  <td class="n">10</td>
+  <td class="n">$244.00</td>
+</tr>
+<tr>
+  <td class="rk">3</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/120256154047480602.jpg" data-name="Grid Photos | Style 4 | Image 12 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047480602" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 12 | AC 1"><img src="creatives/120256154047480602.jpg" alt="Grid Photos | Style 4 | Image 12 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 4 | Image 12 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0628</code><span class="acct acct-sts">STS</span>Scaling<span class="sep">&middot;</span>Scaling Campaign 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047480602" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">479<span class="bar bar-leads"><span style="width:65.3%"></span></span></td>
+  <td class="n">$1.29</td>
+  <td class="n">$618.23</td>
+  <td class="n">1,749</td>
+  <td class="n">27.4%</td>
+  <td class="n">64,373</td>
+  <td class="n">13</td>
+  <td class="n">$283.00</td>
+</tr>
+<tr>
+  <td class="rk">4</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860365142010791.jpg" data-name="Grid Photos | Style 4 | Image 04 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365142010791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 04 | AC 1"><img src="creatives/23860365142010791.jpg" alt="Grid Photos | Style 4 | Image 04 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 4 | Image 04 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0247</code><span class="acct acct-tsa">TSA</span>Scaling 2<span class="sep">&middot;</span>TSA Scaling</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365142010791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">418<span class="bar bar-leads"><span style="width:56.9%"></span></span></td>
+  <td class="n">$1.34</td>
+  <td class="n">$558.46</td>
+  <td class="n">1,936</td>
+  <td class="n">21.6%</td>
+  <td class="n">62,342</td>
+  <td class="n">16</td>
+  <td class="n">$349.00</td>
+</tr>
+<tr>
+  <td class="rk">5</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/120256154047350602.jpg" data-name="Grid Photos | Style 3 | Image 09 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047350602" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 3 | Image 09 | AC 1"><img src="creatives/120256154047350602.jpg" alt="Grid Photos | Style 3 | Image 09 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 3 | Image 09 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0242</code><span class="acct acct-sts">STS</span>Scaling<span class="sep">&middot;</span>Scaling Campaign 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047350602" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">233<span class="bar bar-leads"><span style="width:31.7%"></span></span></td>
+  <td class="n">$1.29</td>
+  <td class="n">$299.74</td>
+  <td class="n">941</td>
+  <td class="n">24.8%</td>
+  <td class="n">37,020</td>
+  <td class="n">7</td>
+  <td class="n">$187.00</td>
+</tr>
+<tr>
+  <td class="rk">6</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860328059160791.jpg" data-name="General Hooks | Style 1 | Image 07 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860328059160791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: General Hooks | Style 1 | Image 07 | AC 1"><img src="creatives/23860328059160791.jpg" alt="General Hooks | Style 1 | Image 07 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">General Hooks | Style 1 | Image 07 | AC 1</span>
+    <span class="cmeta"><span class="acct acct-tsa">TSA</span>General Hooks<span class="sep">&middot;</span>General Hooks | Style 1 | AC 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860328059160791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">195<span class="bar bar-leads"><span style="width:26.6%"></span></span></td>
+  <td class="n">$1.13</td>
+  <td class="n">$219.87</td>
+  <td class="n">538</td>
+  <td class="n">36.2%</td>
+  <td class="n">19,416</td>
+  <td class="n">1</td>
+  <td class="n">$28.00</td>
+</tr>
+<tr>
+  <td class="rk">7</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860328127650791.jpg" data-name="General Hooks | Style 3 | Image 08 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860328127650791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: General Hooks | Style 3 | Image 08 | AC 1"><img src="creatives/23860328127650791.jpg" alt="General Hooks | Style 3 | Image 08 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">General Hooks | Style 3 | Image 08 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0954</code><span class="acct acct-tsa">TSA</span>General Hooks<span class="sep">&middot;</span>General Hooks | Style 3 | AC 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860328127650791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">191<span class="bar bar-leads"><span style="width:26.0%"></span></span></td>
+  <td class="n">$1.19</td>
+  <td class="n">$227.98</td>
+  <td class="n">460</td>
+  <td class="n">41.5%</td>
+  <td class="n">13,494</td>
+  <td class="n">5</td>
+  <td class="n">$113.00</td>
+</tr>
+<tr>
+  <td class="rk">8</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860330799760791.jpg" data-name="Grid Photos | Style 3 | Image 09 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860330799760791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 3 | Image 09 | AC 1"><img src="creatives/23860330799760791.jpg" alt="Grid Photos | Style 3 | Image 09 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 3 | Image 09 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0242</code><span class="acct acct-tsa">TSA</span>Grid<span class="sep">&middot;</span>Grid | Style 3 | AC 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860330799760791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">182<span class="bar bar-leads"><span style="width:24.8%"></span></span></td>
+  <td class="n">$0.96</td>
+  <td class="n">$174.74</td>
+  <td class="n">607</td>
+  <td class="n">30.0%</td>
+  <td class="n">24,659</td>
+  <td class="n">10</td>
+  <td class="n">$217.00</td>
+</tr>
+<tr>
+  <td class="rk">9</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860365141770791.jpg" data-name="Grid Photos | Style 3 | Image 15 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365141770791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 3 | Image 15 | AC 1"><img src="creatives/23860365141770791.jpg" alt="Grid Photos | Style 3 | Image 15 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 3 | Image 15 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0621</code><span class="acct acct-tsa">TSA</span>Scaling 2<span class="sep">&middot;</span>TSA Scaling</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365141770791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">161<span class="bar bar-leads"><span style="width:21.9%"></span></span></td>
+  <td class="n">$1.41</td>
+  <td class="n">$226.50</td>
+  <td class="n">761</td>
+  <td class="n">21.2%</td>
+  <td class="n">32,533</td>
+  <td class="n">6</td>
+  <td class="n">$141.00</td>
+</tr>
+<tr>
+  <td class="rk">10</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860352910560791.jpg" data-name="Grid Photos | Style 4 | Image 12 | AC 1" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860352910560791" data-watch="" data-dims="1080 &times; 1350" aria-label="Enlarge creative: Grid Photos | Style 4 | Image 12 | AC 1"><img src="creatives/23860352910560791.jpg" alt="Grid Photos | Style 4 | Image 12 | AC 1" loading="lazy" width="64" height="64" decoding="async"></button></td>
+  <th scope="row">
+    <span class="adname">Grid Photos | Style 4 | Image 12 | AC 1</span>
+    <span class="cmeta"><code class="seq">sts0628</code><span class="acct acct-tsa">TSA</span>Grid<span class="sep">&middot;</span>Grid | Style 4 | AC 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860352910560791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">152<span class="bar bar-leads"><span style="width:20.7%"></span></span></td>
+  <td class="n">$0.82</td>
+  <td class="n">$124.11</td>
+  <td class="n">496</td>
+  <td class="n">30.6%</td>
+  <td class="n">17,826</td>
+  <td class="n">4</td>
+  <td class="n">$76.00</td>
+</tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>Top 3 video ads</h2>
+    <p>Three video ads are built and none has delivered an impression yet.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th scope="col" class="rk">#</th><th scope="col" class="tc">Preview</th><th scope="col">Creative</th>
+        <th scope="col" class="n">Leads</th><th scope="col" class="n">Cost / lead</th>
+        <th scope="col" class="n">Spend</th><th scope="col" class="n">Clicks</th>
+        <th scope="col" class="n">Page conv.</th><th scope="col" class="n">Impressions</th>
+        <th scope="col" class="n">Purch.</th><th scope="col" class="n">Revenue</th>
+      </tr></thead>
+      <tbody><tr>
+  <td class="rk">1</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860353554810791.jpg" data-name="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860353554810791" data-watch="https://www.facebook.com/schooloftraditionalskills/videos/921090587286970/" data-dims="228 &times; 128" aria-label="Enlarge creative: Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy"><img src="creatives/23860353554810791.jpg" alt="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" loading="lazy" width="64" height="64" decoding="async"><span class="thumb-play" aria-hidden="true">&#9654;</span></button></td>
+  <th scope="row">
+    <span class="adname">Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy</span>
+    <span class="cmeta"><span class="acct acct-tsa">TSA</span>Video<span class="sep">&middot;</span>Video | Style 3 | AC 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://www.facebook.com/schooloftraditionalskills/videos/921090587286970/" target="_blank" rel="noopener">Watch video</a><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860353554810791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">425<span class="bar bar-leads"><span style="width:57.9%"></span></span></td>
+  <td class="n">$0.61</td>
+  <td class="n">$259.02</td>
+  <td class="n">946</td>
+  <td class="n">44.9%</td>
+  <td class="n">15,270</td>
+  <td class="n">15</td>
+  <td class="n">$312.00</td>
+</tr>
+<tr>
+  <td class="rk">2</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/23860365091320791.jpg" data-name="Video | Style 3 | Video 3 V2 Wide Screen | General Link and Ad Copy" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365091320791" data-watch="https://www.facebook.com/watch/?v=1623038306099225" data-dims="64 &times; 64" aria-label="Enlarge creative: Video | Style 3 | Video 3 V2 Wide Screen | General Link and Ad Copy"><img src="creatives/23860365091320791.jpg" alt="Video | Style 3 | Video 3 V2 Wide Screen | General Link and Ad Copy" loading="lazy" width="64" height="64" decoding="async"><span class="thumb-play" aria-hidden="true">&#9654;</span></button></td>
+  <th scope="row">
+    <span class="adname">Video | Style 3 | Video 3 V2 Wide Screen | General Link and Ad Copy</span>
+    <span class="cmeta"><span class="acct acct-tsa">TSA</span>Video<span class="sep">&middot;</span>Combined Videos | General Page and Ad Copy</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://www.facebook.com/watch/?v=1623038306099225" target="_blank" rel="noopener">Watch video</a><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860365091320791" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">278<span class="bar bar-leads"><span style="width:37.9%"></span></span></td>
+  <td class="n">$0.92</td>
+  <td class="n">$256.03</td>
+  <td class="n">758</td>
+  <td class="n">36.7%</td>
+  <td class="n">12,235</td>
+  <td class="n">4</td>
+  <td class="n">$103.00</td>
+</tr>
+<tr>
+  <td class="rk">3</td>
+  <td class="tc"><button type="button" class="thumb" data-full="creatives/120256153237970602.jpg" data-name="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" data-manage="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256153237970602" data-watch="https://www.facebook.com/watch/?v=921090587286970" data-dims="64 &times; 64" aria-label="Enlarge creative: Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy"><img src="creatives/120256153237970602.jpg" alt="Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy" loading="lazy" width="64" height="64" decoding="async"><span class="thumb-play" aria-hidden="true">&#9654;</span></button></td>
+  <th scope="row">
+    <span class="adname">Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy</span>
+    <span class="cmeta"><span class="acct acct-sts">STS</span>Video<span class="sep">&middot;</span>Video | Style 3 | AC 1</span>
+    <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
+    <span class="xlinks"><a class="xlink" href="https://www.facebook.com/watch/?v=921090587286970" target="_blank" rel="noopener">Watch video</a><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256153237970602" target="_blank" rel="noopener">Ads Manager</a></span>
+  </th>
+  <td class="n">266<span class="bar bar-leads"><span style="width:36.2%"></span></span></td>
+  <td class="n">$0.51</td>
+  <td class="n">$135.52</td>
+  <td class="n">473</td>
+  <td class="n">56.2%</td>
+  <td class="n">5,183</td>
+  <td class="n">11</td>
+  <td class="n">$254.00</td>
+</tr></tbody>
+    </table>
+  </div>
+</section>
+
+
+<section>
+  <div class="sec-head">
+    <h2>Daily log</h2>
+    <p>One row per day of delivery. This table grows as the summit runs.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th scope="col" class="n">Date</th><th scope="col" class="n">Spend</th>
+        <th scope="col" class="n">Link clicks</th><th scope="col" class="n">Leads</th>
+        <th scope="col" class="n">Cost / lead</th><th scope="col" class="n">Page conv.</th>
+        <th scope="col" class="n">Purchases</th><th scope="col" class="n">Revenue</th>
+        <th scope="col" class="n">ROAS</th>
+      </tr></thead>
+      <tbody><tr>
+  <td class="n mono">2026-08-25</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">1</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-08-26</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">1</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-08-27</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">1</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-08-30</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">1</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-08-31</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">1</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-09-01</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">2</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-09-02</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">3</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-09-04</td>
+  <td class="n">$0.00</td>
+  <td class="n">0</td>
+  <td class="n">4</td>
+  <td class="n">$0.00</td>
+  <td class="n"><span class="nil">no data</span></td>
+  <td class="n">0</td>
+  <td class="n">$0.00</td>
+  <td class="n hi"><span class="nil">no data</span></td>
+</tr>
+<tr>
+  <td class="n mono">2026-09-07</td>
+  <td class="n">$107.09</td>
+  <td class="n">358</td>
+  <td class="n">131</td>
+  <td class="n">$0.82</td>
+  <td class="n">36.6%</td>
+  <td class="n">4</td>
+  <td class="n">$85.00</td>
+  <td class="n hi">0.79x</td>
+</tr>
+<tr>
+  <td class="n mono">2026-09-08</td>
+  <td class="n">$2,931.73</td>
+  <td class="n">6,566</td>
+  <td class="n">2,033</td>
+  <td class="n">$1.44</td>
+  <td class="n">31.0%</td>
+  <td class="n">82</td>
+  <td class="n">$1,711.00</td>
+  <td class="n hi">0.58x</td>
+</tr>
+<tr>
+  <td class="n mono">2026-09-09</td>
+  <td class="n">$8,246.81</td>
+  <td class="n">22,045</td>
+  <td class="n">6,401</td>
+  <td class="n">$1.29</td>
+  <td class="n">29.0%</td>
+  <td class="n">213</td>
+  <td class="n">$4,741.00</td>
+  <td class="n hi">0.57x</td>
+</tr>
+<tr>
+  <td class="n mono">2026-09-10</td>
+  <td class="n">$1,098.76</td>
+  <td class="n">2,545</td>
+  <td class="n">788</td>
+  <td class="n">$1.39</td>
+  <td class="n">31.0%</td>
+  <td class="n">14</td>
+  <td class="n">$311.00</td>
+  <td class="n hi">0.28x</td>
+</tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>How these numbers are built</h2>
+    <p>Registrations and sales come from Hyros. Spend, link clicks and impressions come
+    from Meta, which bills them.</p>
+  </div>
+  <div class="method">
+    <div class="mcard">
+      <h3>Ad accounts and creatives</h3>
+      <ul class="plain"><li><span class="acct acct-sts">STS</span>School of Traditional Skills Ad Account<code class="seq">1246959949464564</code></li><li><span class="acct acct-tsa">TSA</span>Traditional Skills Academy<code class="seq">3014083142121289</code></li></ul>
+      <p>Both sit under one Hyros account, so the two are combined without double counting.</p>
+      <p>The split is deliberate. <b>Hyros counts people</b>: it tracks server-side and catches
+      registrations and sales the pixel drops. <b>Meta counts money</b>: it is what actually bills the
+      card. Hyros relays cost rather than measuring it, and relays it late, so taking spend from Meta
+      is what keeps this page matching Ads Manager to the cent. Ad sets are matched by ID, never by
+      campaign name, so no other campaign in either account can leak in.</p>
+      <p>Creative previews are pulled from the Meta Ads API too, so they keep working after Meta's own
+      image links expire.</p>
+    </div>
+    <div class="mcard">
+      <h3>The tag filter</h3>
+      <p>Leads, purchases and revenue count only people carrying <b>!summit-2026</b>:
+      9798 leads in total, of which <b>9367</b> are
+      attributed to a Fall Summit ad and 431 arrived organic or direct.</p>
+      <p>Spend and link clicks cannot be tag-filtered by anyone, so those are the whole-campaign
+      figures for the Fall Summit ad sets.</p>
+      <p><b>Meta will report fewer registrations than this page does.</b> Its pixel only sees what it
+      can attribute in the browser; Hyros matches server-side. Reading the same window on
+      2026-09-10 04:31 PDT, Meta counted 12,332 against
+      Hyros&rsquo; <b>9,367</b>. Neither is broken: they count different things,
+      and the gap is the reason Hyros is here.</p>
+      <p><b>A sale counts only where the buyer touched a Fall Summit ad.</b> If they reached the
+      offer through one, the sale counts whatever click closed it, credited to that ad. A tagged
+      sale with no ad touch anywhere is organic traffic, not the ads, and is left out of every
+      figure here.</p>
+    </div>
+    <div class="mcard">
+      <h3>Definitions</h3>
+      <ul>
+        <li><b>Page conversion</b> is leads divided by link clicks, as requested. It can exceed 100% on an
+          individual ad when Hyros tracks a session Meta did not count as a link click.</li>
+        <li><b>Cost per lead</b> is spend divided by tagged leads.</li>
+        <li><b>Purchases and revenue</b> are sales from !summit-2026 leads who touched a Fall Summit
+          ad, inside the campaign window. The closing click may be anything; the ad touch is what
+          qualifies it. Organic sales carrying the tag are excluded.</li>
+        <li><b>Reg. to sale</b> is purchases divided by registrations: the share of people who
+          signed up and then bought. Page conversion measures the ad and the landing page; this
+          measures what happens after.</li>
+        <li><b>ROAS</b> is that revenue divided by spend. Break-even is 1.00x.</li>
+      </ul>
+    </div>
+    <div class="mcard mcard-refresh">
+      <h3>Refreshing this page</h3>
+      <p>This copy is rebuilt on request, not on a timer. Someone with the dashboard open presses Refresh, which re-pulls Hyros and rebuilds this page a couple of minutes later.</p><p>The timestamp above is the pull it was built from, in the ad account's time zone.</p>
+    </div>
+    <div class="mcard">
+      <h3>Known variances</h3>
+      <ul>
+        <li>Hyros reports <b>0 attributed leads</b> on these ad sets
+          against <b>9367</b> carrying the tag. The tag-filtered figure is used everywhere here.</li>
+        <li><b>15 tagged sales worth $709.00 are excluded as organic.</b> They carry the summit tag but no Fall Summit ad touch anywhere, so they are not the ads&rsquo; doing. Hyros counts 328 tagged sales in this window; this page reports the 313 the ads earned.</li>
+        <li><b>Ad rows sum to $12,380.29 of the $12,384.39 total.</b> Hyros has not yet
+          broken every ad set's spend down to individual ads, and the ad level is one full-window pull
+          taken seconds after the per-day sweep rather than part of it. The campaign table and the
+          headline figures use the ad-set numbers, which are authoritative; the creative ranking below
+          uses the ad rows, so its spend column runs slightly light.</li>
+        <li>Five older sales sit on tagged leads but predate 2026-09-07, the first day any
+          Fall Summit ad ran: four staff test transactions and one Preservation Summit rebill. All five are
+          listed in the purchase ledger.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>School of Traditional Skills and Traditional Skills Academy</span>
+  <span>Data pulled 2026-09-10 04:31 PDT from Hyros</span>
+  <span>Rebuilt on request, not on a timer</span>
+</footer>
+</div>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Creative preview">
+  <div class="lb-inner">
+    <img class="lb-img" id="lbImg" alt="">
+    <div class="lb-bar">
+      <span class="lb-name" id="lbName"></span>
+      <span class="lb-dims" id="lbDims"></span>
+      <a id="lbWatch" href="#" target="_blank" rel="noopener" hidden>Watch video</a>
+      <a id="lbManage" href="#" target="_blank" rel="noopener">Open in Ads Manager</a>
+      <button type="button" class="lb-close" id="lbClose">Close</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var lb = document.getElementById('lb'), img = document.getElementById('lbImg'),
+      name = document.getElementById('lbName'), dims = document.getElementById('lbDims'),
+      manage = document.getElementById('lbManage'), watch = document.getElementById('lbWatch'),
+      last = null;
+  function open(btn) {
+    last = btn;
+    img.src = btn.dataset.full;
+    img.alt = btn.dataset.name;
+    name.textContent = btn.dataset.name;
+    dims.innerHTML = btn.dataset.dims;
+    manage.href = btn.dataset.manage;
+    if (btn.dataset.watch) { watch.href = btn.dataset.watch; watch.hidden = false; }
+    else { watch.hidden = true; }
+    lb.classList.add('on');
+    document.getElementById('lbClose').focus();
+  }
+  function close() {
+    lb.classList.remove('on');
+    img.removeAttribute('src');
+    if (last) { last.focus(); last = null; }
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.thumb[data-full]');
+    if (btn) { open(btn); return; }
+    if (e.target === lb || e.target.id === 'lbClose') close();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && lb.classList.contains('on')) close();
+  });
+})();
+
+// Refresh button. Only useful when serve.py is hosting the page, since a static host
+// has nothing to POST to; the published copy is rebuilt by the same press via Actions.
+//
+// The refresh takes roughly twenty seconds: Hyros is paged for leads, sales and a
+// window per day, then the page is rebuilt. Earlier this button just sat there for
+// that whole time and a second press got a 409, which read as "it did not work". It
+// now polls for the live stage and a second press simply joins the run in flight.
+(function () {
+  var local = ['localhost', '127.0.0.1', '::1'].indexOf(location.hostname) !== -1;
+  var btn = document.getElementById('refreshBtn'),
+      label = document.getElementById('rbLabel'),
+      err = document.getElementById('rbErr'),
+      bar = document.getElementById('rbBar');
+  if (!local || !btn) return;
+  btn.hidden = false;
+
+  // Where the bar sits when each stage begins, weighted by how long each actually
+  // takes: the Hyros pull is about two thirds of the wall clock, the rebuild most of
+  // the rest. Within a stage the bar creeps toward the next mark so it never freezes.
+  var MARKS = {
+    'Starting': 4,
+    'Pulling Hyros': 8,
+    'Refreshing previews': 66,
+    'Rebuilding the page': 74,
+    'Publishing the shared copy': 94
+  };
+  var NEXT = {
+    'Starting': 8,
+    'Pulling Hyros': 66,
+    'Refreshing previews': 74,
+    'Rebuilding the page': 94,
+    'Publishing the shared copy': 99
+  };
+  var pct = 0, creep = null;
+
+  function draw(p) { pct = Math.max(pct, Math.min(p, 99.5)); bar.style.width = pct + '%'; }
+
+  function stageTo(stage) {
+    var from = MARKS[stage], to = NEXT[stage];
+    if (from === undefined) return;
+    draw(from);
+    clearInterval(creep);
+    // Asymptotic creep: fast at first, never quite reaching the next mark.
+    creep = setInterval(function () { draw(pct + (to - pct) * 0.06); }, 400);
+  }
+
+  function stop() {
+    clearInterval(creep);
+    creep = null;
+    document.body.classList.remove('is-refreshing');
+    btn.disabled = false;
+  }
+
+  function fail(m) {
+    stop();
+    bar.style.width = '0';
+    label.textContent = 'Refresh';
+    err.textContent = m;
+    err.hidden = false;
+  }
+
+  function poll() {
+    fetch('/status', { cache: 'no-store' })
+      .then(function (r) {
+        if (r.status === 404) {
+          throw new Error('This server is an older instance and has no /status. '
+                        + 'Quit it and reopen Fall Summit Dashboard.command.');
+        }
+        return r.json();
+      })
+      .then(function (s) {
+        if (s.running) {
+          stageTo(s.stage);
+          label.textContent = (s.stage || 'Working') + '… ' + Math.round(s.elapsed) + 's';
+          setTimeout(poll, 600);
+          return;
+        }
+        if (s.error) { fail(s.error); return; }
+        clearInterval(creep);
+        bar.style.width = '100%';
+        label.textContent = 'Reloading…';
+        // Cache-bust: a plain reload can be served from cache, and then the page looks
+        // unchanged even though it was just rebuilt.
+        setTimeout(function () {
+          location.replace(location.pathname + '?t=' + Date.now());
+        }, 300);
+      })
+      .catch(function (e) { fail(e.message || String(e)); });
+  }
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    err.hidden = true;
+    pct = 0;
+    document.body.classList.add('is-refreshing');
+    stageTo('Starting');
+    label.textContent = 'Starting…';
+    fetch('/refresh', { method: 'POST', cache: 'no-store' })
+      .then(function (r) { if (!r.ok && r.status !== 409) throw new Error('HTTP ' + r.status); })
+      .then(function () { setTimeout(poll, 350); })
+      .catch(function (e) { fail(e.message || String(e)); });
+  });
+})();
+</script>
+
+<script>
+(function () {
+  var MINE = "2026-09-10 04:31 PDT", KEY = 'fs26-stamp-try';
+  function check() {
+    if (document.hidden) return;
+    fetch('version.json?cb=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v || !v.pulled_at || v.pulled_at === MINE) return;
+        // One reload per stamp per tab: if the new HTML somehow still reads old,
+        // sit still rather than spin.
+        var tried = null;
+        try { tried = sessionStorage.getItem(KEY); } catch (e) {}
+        if (tried === v.pulled_at) return;
+        try { sessionStorage.setItem(KEY, v.pulled_at); } catch (e) {}
+        location.replace(location.pathname + '?v=' + encodeURIComponent(v.pulled_at));
+      })
+      .catch(function () {});   // offline, or no version file: keep showing what we have
+  }
+  document.addEventListener('visibilitychange', check);
+  window.addEventListener('focus', check);
+  setTimeout(check, 1200);
+})();
+</script>
