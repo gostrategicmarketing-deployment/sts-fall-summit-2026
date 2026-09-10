@@ -144,8 +144,11 @@ jobs:
           bad = []
           if re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', h):
               bad.append("an email address")
-          if not re.search(r'Customer 1', h):
-              bad.append("no redaction markers found, so --redact may not have run")
+          # Was: look for a pseudonymised buyer name. Those only ever appeared in the
+          # purchase ledger, which came off the page on 2026-09-10, so the build now
+          # declares its own mode and this reads that.
+          if not re.search(r'name="build-mode" content="redacted"', h):
+              bad.append("page is not marked as a redacted build, so --redact may not have run")
           if re.search(r'API_[0-9a-f]{16}', h):
               bad.append("something shaped like the API key")
           if bad:

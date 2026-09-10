@@ -379,24 +379,6 @@ def funnel():
                    f'<span class="fn-lab">{esc(lab)}</span></div>')
     return "".join(out)
 
-def ledger_rows():
-    out = []
-    for s in LEDGER:
-        counted = s["counted"]
-        state = ('<span class="pill pill-live">Counted</span>' if counted
-                 else '<span class="pill pill-out">Excluded</span>')
-        tags = ""
-        if s["refunded"]: tags += '<span class="flag flag-out">Refunded</span>'
-        if s["recurring"]: tags += '<span class="flag flag-note">Recurring rebill</span>'
-        out.append(f"""<tr class="{'' if counted else 'row-idle'}">
-  <td class="n mono">{esc(s["date"])}</td>
-  <td class="n">{money(s["amount"])}</td>
-  <td>{esc(s["lead"])}</td>
-  <td class="st">{state}</td>
-  <td class="why">{esc(s["classification"])}{f'<span class="flags">{tags}</span>' if tags else ''}</td>
-</tr>""")
-    return "\n".join(out)
-
 def daily_rows():
     out = []
     for d in DAILY:
@@ -477,6 +459,9 @@ else:
                    f'run.{_idle_sentence}')
 
 NOINDEX = ('<meta name="robots" content="noindex, nofollow">\n' if REDACT else "")
+# CI refuses to publish unless this says redacted. It used to look for a pseudonymised
+# buyer name, which stopped existing when the purchase ledger came off the page.
+BUILD_MODE = f'<meta name="build-mode" content="{"redacted" if REDACT else "internal"}">\n'
 
 
 def _freshness():
@@ -565,7 +550,7 @@ STALE_JS = "" if not REDACT else """
 """ % json.dumps(M["pulled_at"])
 
 PAGE = f"""<meta charset="utf-8">
-{NOINDEX}<title>Fall Summit 2026 Acquisition Board</title>
+{NOINDEX}{BUILD_MODE}<title>Fall Summit 2026 Acquisition Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IM+Fell+Great+Primer:ital@0;1&display=swap">
@@ -984,23 +969,6 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </div>
 </section>
 
-<section>
-  <div class="sec-head">
-    <h2>Purchase ledger</h2>
-    <p>Every Stripe sale Hyros holds against a {esc(M["tag_filter"])} lead. Tagged sales count whatever click
-      closed them, so the only thing that excludes one here is falling outside the campaign window.
-      {"Buyer names are replaced with sequential labels on this shared copy; every date, amount and classification is unchanged." if REDACT else ""}</p>
-  </div>
-  <div class="tw">
-    <table>
-      <thead><tr>
-        <th scope="col" class="n">Date</th><th scope="col" class="n">Amount</th>
-        <th scope="col">Lead</th><th scope="col">In the numbers</th><th scope="col">Reason</th>
-      </tr></thead>
-      <tbody>{ledger_rows()}</tbody>
-    </table>
-  </div>
-</section>
 
 <section>
   <div class="sec-head">
@@ -1097,8 +1065,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
           f'{"It carries" if _exc_n == 1 else "They carry"} the summit tag but no Fall Summit ad touch '
           f'anywhere, so {"it is" if _exc_n == 1 else "they are"} not the ads&rsquo; doing. Hyros counts '
           f'{TOTAL["purchases"] + _exc_n} tagged sales in this window; this page reports the '
-          f'{TOTAL["purchases"]} the ads earned. The excluded {"one is" if _exc_n == 1 else "ones are"} '
-          f'in the ledger below, marked Excluded.</li>' if _exc_n else ''}
+          f'{TOTAL["purchases"]} the ads earned.</li>' if _exc_n else ''}
         <li><b>Ad rows sum to {money(M["ad_level_spend_sum"])} of the {money(TOTAL["spend"])} total.</b> Hyros has not yet
           broken every ad set's spend down to individual ads, and the ad level is one full-window pull
           taken seconds after the per-day sweep rather than part of it. The campaign table and the
