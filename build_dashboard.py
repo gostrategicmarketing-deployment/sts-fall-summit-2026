@@ -869,9 +869,9 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     {REFRESH_UI}
     {STAMP_HTML}
     Times are the ad account's<br>
-    Source: Hyros<br>
-    Sales credit: summit tag<br>
-    Spend and clicks: last click
+    Registrations and sales: Hyros<br>
+    Spend and clicks: Meta<br>
+    Sales need a Fall Summit ad touch
   </div>
 </header>
 
