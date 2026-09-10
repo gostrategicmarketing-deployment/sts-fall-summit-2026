@@ -63,8 +63,17 @@ def get(path, params=None, tries=4):
     return None, "exhausted retries"
 
 
-def paged(path, params, key="result", cap=40):
-    """Follow nextPageId until the endpoint runs out. Returns the concatenated rows."""
+def paged(path, params, key="result", cap=400):
+    """Follow nextPageId until the endpoint runs out. Returns the concatenated rows.
+
+    `cap` is a runaway guard, NOT a row limit, so exhausting it is a hard error.
+    It used to be 40 pages and return quietly: at 250 rows a page that silently
+    truncated every pull at 10,000 rows. Hyros returns leads NEWEST FIRST, so on
+    2026-09-10, with 11,199 tagged leads, the 1,199 oldest were dropped without a
+    word. The dashboard showed 0 leads on 2026-09-07 and 1,089 on 09-08 against
+    the true 137 and 2,141, and cost per lead was overstated across the board
+    because the spend for those days stayed while their leads vanished.
+    """
     out, cursor, params = [], None, dict(params or {})
     for _ in range(cap):
         if cursor:
@@ -76,8 +85,10 @@ def paged(path, params, key="result", cap=40):
         out.extend(rows)
         cursor = d.get("nextPageId")
         if not cursor or not rows:
-            break
-    return out
+            return out
+    raise SystemExit(
+        f"{path}: still more pages after {cap} ({len(out):,} rows). Refusing to return a "
+        f"truncated pull, which would silently undercount the oldest days. Raise the cap.")
 
 
 def _probe():
