@@ -91,29 +91,29 @@
   },
   {
     "date": "2026-09-09",
-    "spend": 8302.46,
+    "spend": 8302.56,
     "clicks": 22159,
-    "impressions": 713223,
-    "leads": 6403,
+    "impressions": 713227,
+    "leads": 6402,
     "purchases": 213,
     "revenue": 4741.0
   },
   {
     "date": "2026-09-10",
-    "spend": 9358.38,
-    "clicks": 23696,
-    "impressions": 804470,
+    "spend": 9378.07,
+    "clicks": 23739,
+    "impressions": 806513,
     "leads": 7091,
     "purchases": 189,
     "revenue": 4663.0
   },
   {
     "date": "2026-09-11",
-    "spend": 2388.71,
-    "clicks": 5782,
-    "impressions": 193960,
-    "leads": 1920,
-    "purchases": 51,
-    "revenue": 1141.0
+    "spend": 3337.1,
+    "clicks": 8100,
+    "impressions": 278349,
+    "leads": 2624,
+    "purchases": 71,
+    "revenue": 1593.0
   }
 ]
