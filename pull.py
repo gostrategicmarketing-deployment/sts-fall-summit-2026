@@ -8,9 +8,11 @@ and the GitHub Actions job can both run it unattended.
     python3 pull.py            # refresh today's figures
     python3 pull.py --date 2026-09-08
 
-Campaigns, ad sets and ads are DISCOVERED from /sources and /ads on every run rather
-than read from a stored list. A hardcoded list is what went stale on 2026-09-07 and
-silently dropped an ad that was holding 16 leads.
+Campaigns, ad sets and ads are DISCOVERED on every run rather than read from a stored
+list. A hardcoded list is what went stale on 2026-09-07 and silently dropped an ad that
+was holding 16 leads. The SLOTS table below now controls only the reading ORDER and the
+subtotal blocks: a Fall Summit campaign that matches nothing in it is still counted, and
+so is a new ad set Meta is billing before Hyros has registered it as a source.
 
 Counting rules, set deliberately and not to be changed casually:
   - Leads, purchases and revenue count only leads carrying !summit-2026.
@@ -45,27 +47,33 @@ TAG = "!summit-2026"
 # optional since Pages 3 to 5 launched as "Fall 2026"; they read "Fall Summit 2026" now,
 # but the tolerance stays because the rename could go either way again.
 #
-# The patterns must not overlap. "Scaling" excludes a following number rather than
-# relying on Scaling 2 being listed first: order-dependent matching is the kind of thing
-# that survives review and then breaks silently a month later.
+# The patterns must not overlap, and each one ends where the campaign name ends rather
+# than running on: order-dependent matching is the kind of thing that survives review and
+# then breaks silently a month later. "Scaling" therefore has to be the WHOLE segment. It
+# used to accept anything starting with the word, which quietly folded
+# "Fall Summit 2026 | Scaling Canda" into the Scaling row under the Scaling name; a
+# campaign nobody declared now gets its own line instead of hiding inside somebody else's.
 # Third field is the group the page subtotals on.
 SLOTS = [
-    ("Page 1",         r"Fall (Summit )?2026 \| Page 1\b",          "named"),
-    ("Page 2",         r"Fall (Summit )?2026 \| Page 2\b",          "named"),
-    ("Page 3",         r"Fall (Summit )?2026 \| Page 3\b",          "named"),
-    ("Page 4",         r"Fall (Summit )?2026 \| Page 4\b",          "named"),
-    ("Page 5",         r"Fall (Summit )?2026 \| Page 5\b",          "named"),
-    ("General Hooks",  r"Fall (Summit )?2026 \| General Hooks",      "named"),
-    ("Grid",           r"Fall (Summit )?2026 \| Grid",               "named"),
-    ("Video",          r"Fall (Summit )?2026 \| Videos?\b",          "named"),
+    ("Page 1",         r"Fall (Summit )?2026 \| Page 1\s*(?:\||$)", "named"),
+    ("Page 2",         r"Fall (Summit )?2026 \| Page 2\s*(?:\||$)", "named"),
+    ("Page 3",         r"Fall (Summit )?2026 \| Page 3\s*(?:\||$)", "named"),
+    ("Page 4",         r"Fall (Summit )?2026 \| Page 4\s*(?:\||$)", "named"),
+    ("Page 5",         r"Fall (Summit )?2026 \| Page 5\s*(?:\||$)", "named"),
+    ("General Hooks",  r"Fall (Summit )?2026 \| General Hooks\s*(?:\||$)", "named"),
+    ("Grid",           r"Fall (Summit )?2026 \| Grid( Photos)?\s*(?:\||$)", "named"),
+    ("Video",          r"Fall (Summit )?2026 \| Videos?\s*(?:\||$)", "named"),
     # Launched 2026-09-08, where winners go to spend. One row each, by request: the
     # duplicate carries its own budget and can win or lose on its own.
-    ("Scaling",        r"Fall (Summit )?2026 \| Scaling(?! *\d)",     "scaling"),
+    ("Scaling",        r"Fall (Summit )?2026 \| Scaling\s*(?:\||$)",  "scaling"),
     ("Scaling 2",      r"Fall (Summit )?2026 \| Scaling 2\b(?!.*-\s*Copy)", "scaling"),
 ]
-GROUP_OF = {slot: group for slot, _pat, group in SLOTS}
+DECLARED = {slot for slot, _pat, _group in SLOTS}
 # Shown above each subtotal line. A group of one needs no subtotal; the page skips it.
 GROUP_LABEL = {"named": "named campaigns", "scaling": "scaling campaigns"}
+# The order the blocks read in. A campaign discovered into a group not listed here is
+# appended after them rather than dropped.
+GROUP_ORDER = ["named", "scaling"]
 # A different, earlier summit. Its campaigns must never be swept in.
 EXCLUDE = re.compile(r"Preservation", re.I)
 # Deliberately off the sheet. "Scaling 2 | ABO - Copy" was a duplicate that never left
@@ -77,6 +85,7 @@ IS_SUMMIT = re.compile(r"Fall (Summit )?2026", re.I)
 
 
 def slot_for(campaign_name):
+    """The declared slot for a campaign, or None if it matches no entry in SLOTS."""
     if not campaign_name or EXCLUDE.search(campaign_name) or HIDDEN.search(campaign_name):
         return None
     for slot, pat, _group in SLOTS:
@@ -85,21 +94,71 @@ def slot_for(campaign_name):
     return None
 
 
-def discover():
-    """Every summit ad set and ad, straight from Hyros. Returns (adsets, ads)."""
-    adsets, ads, unmatched = {}, {}, set()
+# A campaign matching no SLOT is still put on the board, under a label derived from its
+# own name. Dropping it was the old behaviour and it was the wrong one: on 2026-09-14
+# "TOF | Fall Summit 2026 | Warm Scaling 1 | ABO" existed in Hyros and appeared on no row,
+# and every campaign launched after it would have joined it there. Declaring a slot is now
+# how a campaign gets a chosen name and a chosen block, never how it gets counted.
+_TRIM = (
+    r"^\s*(?:TOF|MOF|BOF)\s*\|\s*",            # funnel stage
+    r"Fall\s+(?:Summit\s+)?2026\s*\|\s*",      # the summit itself
+    r"\s*\|\s*(?:ABO|CBO)\s*$",                 # buying type
+)
+
+
+def auto_slot(campaign_name):
+    """A short row label for an undeclared campaign, cut from the campaign name."""
+    name = campaign_name or ""
+    for pat in _TRIM:
+        name = re.sub(pat, "", name, flags=re.I)
+    return name.strip(" |") or (campaign_name or "").strip() or "Unnamed campaign"
+
+
+def auto_group(slot):
+    """Which block an undeclared campaign subtotals into. Grouping only: the grand
+    total takes every campaign whichever block it lands in."""
+    return "scaling" if re.search(r"scal", slot, re.I) else "named"
+
+
+def discover(lead_campaigns=(), first_day=None, today=None):
+    """Every summit ad set and ad, from Hyros and from Meta.
+
+    Returns (adsets, ads, slot_table, offboard). `slot_table` is the ordered
+    (slot, group, auto) list the page renders. `offboard` names campaigns holding
+    tagged leads that are deliberately not counted.
+
+    A campaign reaches the board three ways: it matches a declared SLOT, it is named
+    for this summit, or it is holding !summit-2026 leads. Only EXCLUDE (a different
+    summit) and HIDDEN (a duplicate that never left review) keep one off.
+    """
+    lead_campaigns = {c for c in lead_campaigns if c}
+    adsets, ads, auto, offboard = {}, {}, {}, set()
+
+    def resolve(camp):
+        """(slot, is_auto) for a campaign name; (None, False) leaves it off the board."""
+        if not camp or EXCLUDE.search(camp) or HIDDEN.search(camp):
+            return None, False
+        slot = slot_for(camp)
+        if slot:
+            return slot, False
+        if not (IS_SUMMIT.search(camp) or camp in lead_campaigns):
+            return None, False
+        slot = auto_slot(camp)
+        if slot in DECLARED:          # never merge into a row it did not actually match
+            slot = camp.strip()
+        auto.setdefault(slot, auto_group(slot))
+        return slot, True
+
     with cf.ThreadPoolExecutor(max_workers=2) as ex:
         f_src = ex.submit(paged, "sources", {"pageSize": 250, "integrationType": "FACEBOOK"})
         f_ads = ex.submit(paged, "ads", {"pageSize": 250, "integrationType": "FACEBOOK"})
         src_rows, ad_rows_raw = f_src.result(), f_ads.result()
     for s in src_rows:
         camp = ((s.get("category") or {}).get("name")) or ""
-        slot = slot_for(camp)
+        slot, _auto = resolve(camp)
         if not slot:
-            # Looks like this summit but matched no slot: almost certainly a rename.
-            # Silently dropping one is how Page 3, 4 and 5 went missing originally.
-            if IS_SUMMIT.search(camp) and not EXCLUDE.search(camp) and not HIDDEN.search(camp):
-                unmatched.add(camp)
+            if camp in lead_campaigns:
+                offboard.add(camp)
             continue
         src = s.get("adSource") or {}
         if not src.get("adSourceId"):
@@ -108,6 +167,29 @@ def discover():
             "adSetId": src["adSourceId"], "adSetName": s.get("name") or "",
             "adAccountId": src.get("adAccountId", ""), "campaign": camp, "slot": slot,
         }
+
+    # Hyros lists an ad set as a source only once it has carried traffic, so a campaign
+    # launched this morning can be spending with nothing here to hang the spend on. Meta
+    # bills it and knows the ad set at once, so the two lists are unioned by id and the
+    # money is on the board from the first dollar. Ads still come from Hyros alone: an ad
+    # set Meta has and Hyros does not cannot be holding a tagged lead yet.
+    if first_day and today:
+        try:
+            from meta_cost import adsets_by_campaign
+            for sid, info in adsets_by_campaign(first_day, today).items():
+                if sid in adsets:
+                    continue
+                slot, _auto = resolve(info["campaign"])
+                if not slot:
+                    continue
+                adsets[sid] = {
+                    "adSetId": sid, "adSetName": info["adset_name"],
+                    "adAccountId": info["account"], "campaign": info["campaign"],
+                    "slot": slot,
+                }
+        except Exception as e:
+            print(f"  could not sweep Meta for unregistered ad sets ({type(e).__name__}: {e})")
+
     for a in ad_rows_raw:
         parent = (a.get("source") or {})
         psrc = parent.get("adSource") or {}
@@ -118,13 +200,21 @@ def discover():
             continue
         meta = adsets[psrc["adSourceId"]]
         name = a.get("name") or ""
+        is_video = bool(re.search(r"\bvideos?\b", meta["slot"], re.I)
+                        or re.search(r"\bvideo\b", name, re.I))
         ads[src["adSourceId"]] = {
             "id": src["adSourceId"], "name": name,
             "campaign": meta["slot"], "adset": meta["adSetName"],
             "account": "TSA" if src.get("adAccountId") == "3014083142121289" else "STS",
-            "type": "video" if (meta["slot"] == "Video" or re.search(r"\bvideo\b", name, re.I)) else "image",
+            "type": "video" if is_video else "image",
         }
-    return adsets, ads, sorted(unmatched)
+
+    # Declared slots keep their order, discovered ones follow inside their own block.
+    # The sort is stable, so this is "group blocks in GROUP_ORDER, rows unchanged within".
+    slot_table = [(slot, group) for slot, _pat, group in SLOTS] + sorted(auto.items())
+    rank = {g: i for i, g in enumerate(GROUP_ORDER)}
+    slot_table.sort(key=lambda t: rank.get(t[1], len(rank)))
+    return adsets, ads, [(sl, g, sl in auto) for sl, g in slot_table], sorted(offboard)
 
 
 def attribution(ids, level, start, end):
@@ -167,10 +257,15 @@ def tagged_leads():
     characters are the local day the registration landed. That per-day split is
     what makes "Just Today" a real day figure instead of a copy of the running
     total.
+
+    The campaign names come back too. They are how a campaign nobody named still
+    earns its place on the board, and how an ad found holding leads can be told
+    apart from one that belongs to a campaign kept off it deliberately.
     """
     rows = paged("leads", {"pageSize": 250, "tags": TAG})
     per_ad, per_campaign_name, paid = collections.Counter(), collections.Counter(), 0
     per_day = collections.defaultdict(collections.Counter)
+    ad_campaign = {}
     for L in rows:
         ls = L.get("lastSource") or {}
         sla = ls.get("sourceLinkAd")
@@ -178,8 +273,10 @@ def tagged_leads():
             per_ad[sla["adSourceId"]] += 1
             paid += 1
             per_day[str(L.get("creationDate") or "")[:10]][sla["adSourceId"]] += 1
-            per_campaign_name[((ls.get("category") or {}).get("name")) or ""] += 1
-    return rows, per_ad, per_day, paid
+            camp = ((ls.get("category") or {}).get("name")) or ""
+            per_campaign_name[camp] += 1
+            ad_campaign.setdefault(sla["adSourceId"], camp)
+    return rows, per_ad, per_day, paid, set(per_campaign_name), ad_campaign
 
 
 def tagged_sales(start, end, summit_ads):
@@ -301,29 +398,50 @@ def main():
     # knows when the campaign window opened. dashboard_data.json is never committed.
     first_day = cfg.get("first_spend_day") or (prev.get("meta") or {}).get("first_spend_day") or today
 
+    # Leads are pulled BEFORE discovery so a campaign can earn its place by holding
+    # them, not only by being named the way this summit's campaigns have been named
+    # so far. Naming has already changed once here.
+    print("pulling tagged leads...")
+    lead_rows, leads_per_ad, leads_per_day, paid_raw, lead_campaigns, ad_campaign = tagged_leads()
+    print(f"  {len(lead_rows)} tagged, {paid_raw} ad-attributed")
+
     print("discovering summit campaigns, ad sets and ads...")
-    adsets, ads, unmatched = discover()
-    if unmatched:
-        print("  WARNING: summit campaigns matching no slot (renamed?): "
-              + "; ".join(unmatched))
+    adsets, ads, slot_table, offboard = discover(lead_campaigns, first_day, today)
+    added = [sl for sl, _g, is_auto in slot_table if is_auto]
+    if added:
+        print("  on the board automatically, not named in SLOTS: " + ", ".join(added))
+    if offboard:
+        print("  campaigns holding tagged leads but kept off the board: " + "; ".join(offboard))
     slots_found = sorted({v["slot"] for v in adsets.values()})
     print(f"  {len(adsets)} ad sets, {len(ads)} ads across {len(slots_found)} slots: {', '.join(slots_found)}")
     if not adsets:
         raise SystemExit("No summit ad sets found. Campaign naming may have changed.")
 
-
-    print("pulling tagged leads...")
-    lead_rows, leads_per_ad, leads_per_day, paid = tagged_leads()
-    print(f"  {len(lead_rows)} tagged, {paid} ad-attributed")
     print("pulling sales...")
     ledger, sales_per_ad, rev_per_ad = tagged_sales(first_day, today, ads)
     print(f"  {len(ledger)} tagged sales, ${sum(l['amount'] for l in ledger):,.2f}")
 
-    # Any ad holding a tagged lead must be in the discovered set, or the rows disagree.
+    # An ad holding tagged leads that is not on the board is one of two things. If its
+    # campaign is one EXCLUDE or HIDDEN keeps off deliberately, its leads come out of the
+    # paid base and are reported on the page. Anything else is a campaign that should have
+    # been discovered and was not, which is how an ad holding 16 leads vanished on
+    # 2026-09-07, so that still stops the run rather than quietly shrinking the totals.
     missing = sorted(set(leads_per_ad) - set(ads))
-    if missing:
-        raise SystemExit("ads hold tagged leads but were not discovered: "
-                         + ", ".join(f"{m} ({leads_per_ad[m]})" for m in missing))
+    kept_off = [m for m in missing
+                if EXCLUDE.search(ad_campaign.get(m, "")) or HIDDEN.search(ad_campaign.get(m, ""))]
+    unexplained = [m for m in missing if m not in kept_off]
+    if unexplained:
+        raise SystemExit("ads hold tagged leads but were not discovered: " + ", ".join(
+            f"{m} ({leads_per_ad[m]} leads, {ad_campaign.get(m) or 'unknown campaign'})"
+            for m in unexplained))
+    offboard_detail = collections.Counter()
+    for m in kept_off:
+        offboard_detail[ad_campaign.get(m) or "unknown campaign"] += leads_per_ad[m]
+    offboard_leads = sum(offboard_detail.values())
+    paid = paid_raw - offboard_leads
+    if offboard_leads:
+        print(f"  {offboard_leads} tagged leads last touched an off-board campaign and are "
+              "not counted: " + "; ".join(f"{k} ({v})" for k, v in offboard_detail.most_common()))
 
     # Every day row is rebuilt from its own pull, never appended and frozen. A row
     # written mid-afternoon is only a snapshot: on 2026-09-08 the stored 2026-09-07
@@ -421,14 +539,17 @@ def main():
                         "leads_hyros": m.get("leads", 0)})
 
     camp_rows = []
-    for slot, _pat, _group in SLOTS:
+    for slot, group, is_auto in slot_table:
         sets_here = [k for k, v in adsets.items() if v["slot"] == slot]
         agg = [as_run.get(k, {}) for k in sets_here]
         ads_here = [a for a in ad_rows if a["campaign"] == slot]
         spend = round(sum(x.get("spend", 0.0) for x in agg), 2)
         camp_rows.append({
             "slot": slot,
-            "group": GROUP_OF[slot],
+            "group": group,
+            # True when nobody declared this campaign and it was picked up on its own.
+            # The page says so, so an unexpected row reads as discovery, not as a bug.
+            "auto": is_auto,
             "hyros_name": next((adsets[k]["campaign"] for k in sets_here), f"(no {slot} campaign found)"),
             # Three campaigns (General Hooks, Grid, Videos) run under the SAME name in
             # both accounts and are shown as one row. Taking the first ad set's account
@@ -513,7 +634,12 @@ def main():
         "daily_spend_sum": daily_spend_sum,
         "daily_vs_running_spend_gap": round(total_spend - daily_spend_sum, 2),
         "tagged_leads_total": len(lead_rows), "tagged_leads_paid": paid,
-        "tagged_leads_organic_or_direct": len(lead_rows) - paid,
+        "tagged_leads_organic_or_direct": len(lead_rows) - paid_raw,
+        # Campaigns picked up without being declared, and tagged leads whose last ad
+        # touch was a campaign this board deliberately does not count.
+        "auto_discovered_campaigns": added,
+        "offboard_tagged_leads": offboard_leads,
+        "offboard_tagged_lead_campaigns": dict(offboard_detail),
         "hyros_report_leads_on_summit_adsets": sum(x.get("leads", 0) for x in as_run.values()),
         "ad_level_spend_sum": round(sum(a["spend"] for a in ad_rows), 2),
         # Renamed from uncredited_*: those were ADDED to the headline, these are removed

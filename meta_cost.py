@@ -26,7 +26,24 @@ ACCOUNTS = [("STS", "1246959949464564"), ("TSA", "3014083142121289")]
 PAGE_LIMIT = 500
 
 
+_ROWS = {}
+
+
 def _rows(account_id, since, until):
+    """Every ad-set-day row in the window, memoised for the life of the process.
+
+    cost_by_adset_day, adsets_by_campaign and campaign_spend all want the same rows.
+    Pulling them separately spent three times the rate limit on one answer, and Meta
+    announces a rate limit by failing the refresh, so the cheapest call is the one
+    not made twice.
+    """
+    key = (account_id, since, until)
+    if key not in _ROWS:
+        _ROWS[key] = _fetch_rows(account_id, since, until)
+    return _ROWS[key]
+
+
+def _fetch_rows(account_id, since, until):
     """Every ad-set-day row in the window, following Meta's paging."""
     params = {
         "level": "adset",
@@ -111,6 +128,30 @@ def cost_by_ad(ad_ids, since, until):
             params["after"] = after
     for m in out.values():
         m["spend"] = round(m["spend"], 2)
+    return out
+
+
+def adsets_by_campaign(since, until):
+    """{adset_id: {campaign, adset_name, account}} for every ad set with delivery.
+
+    Hyros lists an ad set as a source only after it has carried traffic. A campaign
+    launched this morning is therefore invisible there while Meta is already billing
+    it, and its spend would sit on no row. This is the list that keeps a brand new
+    campaign on the board from its first dollar; pull.py decides which of these
+    campaigns belong to the summit, by the same rules it applies to Hyros.
+
+    Reads the same ad-set-day rows the spend figures come from, so knowing about a
+    new campaign costs no extra call.
+    """
+    out = {}
+    for _short, acct in ACCOUNTS:
+        for r in _rows(acct, since, until):
+            if r.get("adset_id"):
+                out[r["adset_id"]] = {
+                    "campaign": r.get("campaign_name") or "",
+                    "adset_name": r.get("adset_name") or "",
+                    "account": acct,
+                }
     return out
 
 

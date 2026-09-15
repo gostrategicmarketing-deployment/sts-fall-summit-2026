@@ -41,7 +41,26 @@ def token():
     )
 
 
-def get(path, params=None, tries=3):
+# Meta announces a throttle as HTTP 403 with is_transient true, not as a 429, and the
+# dashboard's whole refresh used to die on it: "Application request limit reached" came
+# back as a plain 403, was not retried, and the Refresh button reported a hard failure on
+# something that clears itself in seconds. Codes 4, 17, 32 and 613 are the four rate
+# limits; is_transient covers the rest.
+THROTTLE_CODES = {1, 2, 4, 17, 32, 341, 613}
+
+
+def _transient(status, body):
+    """True when Meta is asking to be tried again rather than refusing the request."""
+    if status in (429, 500, 502, 503, 504):
+        return True
+    try:
+        err = (json.loads(body) or {}).get("error") or {}
+    except Exception:
+        return False
+    return bool(err.get("is_transient")) or err.get("code") in THROTTLE_CODES
+
+
+def get(path, params=None, tries=4):
     p = dict(params or {})
     p["access_token"] = token()
     url = f"{GRAPH}/{path}?" + urllib.parse.urlencode(p)
@@ -51,8 +70,10 @@ def get(path, params=None, tries=3):
                 return r.status, json.loads(r.read().decode())
         except urllib.error.HTTPError as e:
             body = e.read().decode()[:300]
-            if e.code in (429, 500, 502, 503) and n < tries - 1:
-                time.sleep(2 * (n + 1))
+            # A rate limit needs longer than a hiccup does: 5s, 20s, 45s rather than the
+            # 2s and 4s that were never going to outlast an app-level limit.
+            if n < tries - 1 and _transient(e.code, body):
+                time.sleep((5, 20, 45)[min(n, 2)])
                 continue
             return e.code, body
         except Exception as e:

@@ -50,6 +50,12 @@ def _export_images():
 IMG_SRC = _export_images()
 M, CAMPS, ADS, LEDGER, DAILY = D["meta"], D["campaigns"], D["ads"], D["purchase_ledger"], D["daily"]
 
+# daily.json also carries lead-only days from before any Fall Summit ad ran (organic and
+# earlier-campaign registrations that happen to be tagged). They are not days of this
+# campaign, so they stay off the daily log. Cut from the data, not hardcoded, so the log
+# still starts at day one if the first spend day ever moves.
+DAILY = [d for d in DAILY if d["date"] >= M["first_spend_day"]]
+
 # Read the order off the data, never a list kept here. pull.py emits campaigns in SLOTS
 # order, so this stays the intended reading order while making it impossible to add a
 # campaign upstream and have the page quietly not show it. Hardcoding this is what hid
@@ -72,6 +78,13 @@ if REDACT:
 
 # ---------- helpers ----------
 def esc(s): return html.escape(str(s))
+def usdate(v):
+    """2026-09-07 -> 9/7/2026. Leaves anything that is not an ISO date alone."""
+    try:
+        y, m, d = str(v).split("-")
+        return f"{int(m)}/{int(d)}/{int(y)}"
+    except Exception:
+        return str(v)
 def money(v, dp=2): return f"${v:,.{dp}f}"
 def num(v): return f"{v:,}"
 def div(a, b): return (a / b) if b else None
@@ -106,6 +119,11 @@ TOTAL = block(CAMPS)
 # Excluded, which is why the headline can be lower than the tag's own sale count.
 _exc_n = int(M.get("excluded_organic_purchases", 0) or 0)
 _exc_rev = float(M.get("excluded_organic_revenue", 0) or 0)
+# Campaigns pull.py put on the board without anybody declaring them, and tagged leads
+# whose last ad touch was a campaign this board deliberately does not count.
+_auto = list(M.get("auto_discovered_campaigns") or [])
+_off_n = int(M.get("offboard_tagged_leads", 0) or 0)
+_off_by = dict(M.get("offboard_tagged_lead_campaigns") or {})
 
 # "Just Today" is its own window, pulled separately by pull.py. It is never derived
 # from TOTAL: rendering one block into both decks is exactly what made the two read
@@ -137,12 +155,22 @@ if _rawp.exists():
     for _L in json.loads(_rawp.read_text())["result"]:
         _sla = (_L.get("lastSource") or {}).get("sourceLinkAd")
         if _sla: _seen[_sla["adSourceId"]] += 1
-    _absent = sorted(set(_seen) - {a["id"] for a in ADS})
-    if _absent:
-        raise SystemExit("ads hold tagged leads but are absent from the dataset: "
-                         + ", ".join(f"{i} ({_seen[i]} leads)" for i in _absent))
-    if sum(_seen.values()) != _paid:
-        raise SystemExit(f"raw lead pull has {sum(_seen.values())} ad-attributed leads "
+    # pull.py leaves an ad off the board only when its campaign is one EXCLUDE or HIDDEN
+    # keeps off deliberately, and it declares how many leads that costs. So the absent
+    # leads are checked against that declared number rather than simply forbidden: an ad
+    # that goes missing for any OTHER reason still breaks the arithmetic and stops the
+    # build, which is the 2026-09-07 guard intact.
+    _ids = {a["id"] for a in ADS}
+    _absent = sorted(set(_seen) - _ids)
+    _off = sum(_seen[i] for i in _absent)
+    if _off != int(M.get("offboard_tagged_leads", 0) or 0):
+        raise SystemExit(
+            f"raw lead pull has {_off} leads on ads absent from the dataset but "
+            f"meta.offboard_tagged_leads says {M.get('offboard_tagged_leads', 0)}: "
+            + ", ".join(f"{i} ({_seen[i]} leads)" for i in _absent))
+    _onboard = sum(_seen[i] for i in _ids & set(_seen))
+    if _onboard != _paid:
+        raise SystemExit(f"raw lead pull has {_onboard} on-board ad-attributed leads "
                          f"but meta.tagged_leads_paid says {_paid}")
 
 _counted = [s for s in LEDGER if s["counted"]]
@@ -384,7 +412,7 @@ def daily_rows():
     for d in DAILY:
         b = block([d])
         out.append(f"""<tr>
-  <td class="n mono">{esc(d["date"])}</td>
+  <td class="n mono">{esc(usdate(d["date"]))}</td>
   <td class="n">{money(d["spend"])}</td>
   <td class="n">{num(d["clicks"])}</td>
   <td class="n">{num(d["leads"])}</td>
@@ -436,6 +464,18 @@ def _prose_list(names):
         return names[0]
     return ", ".join(names[:-1]) + " and " + names[-1]
 
+
+# Tagged leads whose last ad touch was a campaign that is not this summit's. They are
+# left out of every figure, and the page says so rather than letting the three lead
+# numbers quietly fail to add up.
+_offboard_clause = ""
+if _off_n:
+    _one = _off_n == 1
+    _offboard_clause = (
+        f' A further <b>{_off_n:,}</b> tagged lead{"" if _one else "s"} last touched '
+        f'{esc(_prose_list(sorted(_off_by)))}, which {"is" if len(_off_by) == 1 else "are"} not a '
+        f'Fall Summit campaign, so {"it is" if _one else "they are"} left out of every figure here.')
+
 _idle = [c["slot"] for c in CAMPS if c["spend"] <= 0]
 _idle_sentence = ""
 if _idle:
@@ -446,22 +486,29 @@ if _idle:
 
 if M.get("note_running_equals_today"):
     notice_html = (f'<b>Day one.</b> The first Fall Summit spend Hyros recorded is '
-                   f'{esc(M["first_spend_day"])}, so <b>Just Today and Running Total are the same '
+                   f'{esc(usdate(M["first_spend_day"]))}, so <b>Just Today and Running Total are the same '
                    f'numbers today</b>. They separate from tomorrow onward.{_idle_sentence}')
 else:
     # Days of DELIVERY, not rows: daily.json also carries lead-only days from before
     # any spend was recorded, and counting those overstated the campaign's age.
     _delivery_days = sum(1 for d in DAILY if d.get("spend", 0) > 0)
     notice_html = (f'<b>Day {_delivery_days} of delivery.</b> <b>Just Today</b> is '
-                   f'{esc(M["window_end"])} on its own, midnight to now in the account time zone. '
-                   f'<b>Running Total</b> covers {esc(M["first_spend_day"])} to '
-                   f'{esc(M["window_end"])}, every day the Fall Summit campaigns have '
+                   f'{esc(usdate(M["window_end"]))} on its own, midnight to now in the account time zone. '
+                   f'<b>Running Total</b> covers {esc(usdate(M["first_spend_day"]))} to '
+                   f'{esc(usdate(M["window_end"]))}, every day the Fall Summit campaigns have '
                    f'run.{_idle_sentence}')
 
 NOINDEX = ('<meta name="robots" content="noindex, nofollow">\n' if REDACT else "")
 # CI refuses to publish unless this says redacted. It used to look for a pseudonymised
 # buyer name, which stopped existing when the purchase ledger came off the page.
 BUILD_MODE = f'<meta name="build-mode" content="{"redacted" if REDACT else "internal"}">\n'
+
+
+def usdate_stamp(v):
+    """2026-09-13 11:10 PDT -> 9/13/2026 11:10 PDT."""
+    parts = str(v).split(" ", 1)
+    rest = f" {parts[1]}" if len(parts) > 1 else ""
+    return f"{usdate(parts[0])}{rest}"
 
 
 def _freshness():
@@ -471,7 +518,7 @@ def _freshness():
         stamp, zone = raw.rsplit(" ", 1)
         t = datetime.datetime.strptime(stamp, "%Y-%m-%d %H:%M")
         clock = t.strftime("%-I:%M %p").replace("AM", "am").replace("PM", "pm")
-        return f"{clock} {zone}", t.strftime("%A %-d %B %Y")
+        return f"{clock} {zone}", t.strftime("%A, %B %-d, %Y")
     except Exception:
         return raw, ""
 
@@ -485,7 +532,7 @@ STAMP_HTML = (
     f'<span class="fresh-time">{esc(FRESH_TIME)}</span>'
     f'<span class="fresh-date">{esc(FRESH_DATE)}</span>'
     '</div>'
-) if REDACT else f'<b>Pulled {esc(M["pulled_at"])}</b>'
+) if REDACT else f'<b>Pulled {esc(usdate_stamp(M["pulled_at"]))}</b>'
 
 # The published copy is served statically: there is nothing for a Refresh button to
 # POST to, so it is not rendered there at all rather than shipped dead.
@@ -885,7 +932,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <div class="deck deck-today">
       <div class="deck-head">
         <h2>Just Today</h2>
-        <span class="deck-tag">{esc(M["window_end"])}</span>
+        <span class="deck-tag">{esc(usdate(M["window_end"]))}</span>
         <p class="deck-note">Midnight to now, account time zone</p>
       </div>
       <div class="grid">{deck(TODAY)}</div>
@@ -893,7 +940,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <div class="deck deck-run">
       <div class="deck-head">
         <h2>Running Total</h2>
-        <span class="deck-tag">{esc(M["first_spend_day"])} to {esc(M["window_end"])}</span>
+        <span class="deck-tag">{esc(usdate(M["first_spend_day"]))} to {esc(usdate(M["window_end"]))}</span>
         <p class="deck-note">Every day the Fall Summit campaigns have run</p>
       </div>
       <div class="grid">{deck(TOTAL)}</div>
@@ -1012,12 +1059,13 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       <h3>The tag filter</h3>
       <p>Leads, purchases and revenue count only people carrying <b>{esc(M["tag_filter"])}</b>:
       {M["tagged_leads_total"]} leads in total, of which <b>{M["tagged_leads_paid"]}</b> are
-      attributed to a Fall Summit ad and {M["tagged_leads_organic_or_direct"]} arrived organic or direct.</p>
+      attributed to a Fall Summit ad and {M["tagged_leads_organic_or_direct"]} arrived organic or
+      direct.{_offboard_clause}</p>
       <p>Spend and link clicks cannot be tag-filtered by anyone, so those are the whole-campaign
       figures for the Fall Summit ad sets.</p>
       <p><b>Meta will report fewer registrations than this page does.</b> Its pixel only sees what it
       can attribute in the browser; Hyros matches server-side. Reading the same window on
-      {esc(M["pulled_at"])}, Meta counted {M.get("meta_reported_leads", 0):,} against
+      {esc(usdate_stamp(M["pulled_at"]))}, Meta counted {M.get("meta_reported_leads", 0):,} against
       Hyros&rsquo; <b>{M["tagged_leads_paid"]:,}</b>. Neither is broken: they count different things,
       and the gap is the reason Hyros is here.</p>
       <p><b>A sale counts only where the buyer touched a Fall Summit ad.</b> If they reached the
@@ -1060,6 +1108,11 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       <ul>
         <li>Hyros reports <b>{M["hyros_report_leads_on_summit_adsets"]} attributed leads</b> on these ad sets
           against <b>{M["tagged_leads_paid"]}</b> carrying the tag. The tag-filtered figure is used everywhere here.</li>
+        {f'<li><b>{len(_auto)} campaign{"" if len(_auto) == 1 else "s"} '
+          f'{"is" if len(_auto) == 1 else "are"} on this board without having been named in the '
+          f'build:</b> {esc(_prose_list(_auto))}. Every Fall Summit campaign these two accounts run '
+          f'is counted whether or not anyone has told this page about it, so a campaign launched '
+          f'this morning is in the totals above from its first dollar.</li>' if _auto else ''}
         {f'<li><b>{_exc_n} tagged sale{"" if _exc_n == 1 else "s"} worth {money(_exc_rev)} '
           f'{"is" if _exc_n == 1 else "are"} excluded as organic.</b> '
           f'{"It carries" if _exc_n == 1 else "They carry"} the summit tag but no Fall Summit ad touch '
@@ -1071,7 +1124,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
           taken seconds after the per-day sweep rather than part of it. The campaign table and the
           headline figures use the ad-set numbers, which are authoritative; the creative ranking below
           uses the ad rows, so its spend column runs slightly light.</li>
-        <li>Five older sales sit on tagged leads but predate {esc(M["first_spend_day"])}, the first day any
+        <li>Five older sales sit on tagged leads but predate {esc(usdate(M["first_spend_day"]))}, the first day any
           Fall Summit ad ran: four staff test transactions and one Preservation Summit rebill. All five are
           listed in the purchase ledger.</li>
       </ul>
@@ -1081,7 +1134,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 
 <footer>
   <span>School of Traditional Skills and Traditional Skills Academy</span>
-  <span>Data pulled {esc(M["pulled_at"])} from Hyros</span>
+  <span>Data pulled {esc(usdate_stamp(M["pulled_at"]))} from Hyros</span>
 {FOOTER_NOTES}</footer>
 </div>
 
