@@ -10,6 +10,8 @@ Run this file directly to probe which endpoints and parameters the account suppo
 
     python3 hyros_api.py
 """
+import concurrent.futures as cf
+import datetime as dt
 import json
 import os
 import pathlib
@@ -89,6 +91,62 @@ def paged(path, params, key="result", cap=400):
     raise SystemExit(
         f"{path}: still more pages after {cap} ({len(out):,} rows). Refusing to return a "
         f"truncated pull, which would silently undercount the oldest days. Raise the cap.")
+
+
+def windows(start, end, hours, offset_s=0, grid_from=None, grid_to=None):
+    """Contiguous (fromDate, toDate) pairs covering start..end, NEWEST FIRST.
+
+    start and end are naive account-local datetimes: Hyros reads fromDate/toDate in the
+    account's timezone and treats BOTH bounds as inclusive to the second (checked
+    2026-09-18). Each window's toDate is the next one's fromDate, so a row stamped on an
+    edge comes back twice and paged_windows drops the copy by id, and nothing can fall
+    between two windows whatever precision Hyros keeps underneath.
+
+    Inner edges sit every `hours` from grid_from (default start) to grid_to (default
+    end), shifted by offset_s. Hyros caches a query by its parameters: on 2026-09-18 a
+    repeated /sales query kept returning a list without a sale that a query with any
+    other parameters already showed. A run-unique offset makes every window a query
+    Hyros has not seen, while start and end, which decide what is counted, never move.
+    """
+    step = dt.timedelta(hours=hours)
+    edge = (grid_from or start) + dt.timedelta(seconds=offset_s % int(step.total_seconds()))
+    stop = grid_to or end
+    edges = [start]
+    while edge < stop:
+        if start < edge < end:
+            edges.append(edge)
+        edge += step
+    edges.append(end)
+    fmt = "%Y-%m-%dT%H:%M:%S"
+    return [(a.strftime(fmt), b.strftime(fmt)) for a, b in zip(edges, edges[1:])][::-1]
+
+
+def paged_windows(path, params, wins, key="result", workers=12):
+    """paged() once per (fromDate, toDate) window, several at a time. Rows come back in
+    window order (newest first, as windows() returns them), deduplicated by id.
+
+    Hyros caps a page at 250 rows, takes ~1.3s a page, and one cursor cannot be split,
+    so a single paged() over 60,000 tagged leads was five minutes of a six-minute
+    refresh. Cut by creation time the same pull runs side by side: 23s at 12 workers on
+    2026-09-18, every one of the 59,865 leads the sequential pull had plus the 169
+    registered since, and no 429s. Each window still follows its own cursor to the end,
+    so paged()'s refusal to return a truncated pull holds window by window.
+    """
+    def one(w):
+        return paged(path, {**params, "fromDate": w[0], "toDate": w[1]}, key=key)
+
+    with cf.ThreadPoolExecutor(max_workers=workers) as ex:
+        parts = list(ex.map(one, wins))
+    seen, out = set(), []
+    for rows in parts:
+        for r in rows:
+            rid = r.get("id")
+            if rid is not None:
+                if rid in seen:
+                    continue
+                seen.add(rid)
+            out.append(r)
+    return out
 
 
 def _probe():

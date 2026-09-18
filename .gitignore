@@ -4,6 +4,7 @@ data/dashboard_data.json
 data/raw_leads_summit2026.json
 data/*.prev.json
 hyros_key.txt
+windsor_key.txt
 *.key
 _site/
 .commitmsg

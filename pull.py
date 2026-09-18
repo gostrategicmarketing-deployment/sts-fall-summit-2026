@@ -35,12 +35,16 @@ import json
 import pathlib
 import re
 import sys
+import time
 
-from hyros_api import get, paged
+from hyros_api import get, paged, paged_windows, windows
 
 HERE = pathlib.Path(__file__).resolve().parent
 DATA = HERE / "data"
 TAG = "!summit-2026"
+# Shifts the inner edges of every dated Hyros window so no two refreshes send the same
+# query: Hyros answers a repeated query from its cache (see hyros_api.windows).
+_RUN = int(time.time())
 
 # The campaign slots, in the order they appear on the page. Each entry is the friendly
 # slot name and the pattern that recognises its Hyros campaign. "Summit" has been
@@ -120,7 +124,19 @@ def auto_group(slot):
     return "scaling" if re.search(r"scal", slot, re.I) else "named"
 
 
-def discover(lead_campaigns=(), first_day=None, today=None):
+def discovery_rows():
+    """Every Facebook ad set (a Hyros source) and ad Hyros knows, fetched side by side.
+
+    Its own function so main can run it while the tagged leads are still coming in: it
+    needs nothing from them. Only discover(), which sorts these rows, does.
+    """
+    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+        f_src = ex.submit(paged, "sources", {"pageSize": 250, "integrationType": "FACEBOOK"})
+        f_ads = ex.submit(paged, "ads", {"pageSize": 250, "integrationType": "FACEBOOK"})
+        return f_src.result(), f_ads.result()
+
+
+def discover(rows, lead_campaigns=(), first_day=None, today=None):
     """Every summit ad set and ad, from Hyros and from Meta.
 
     Returns (adsets, ads, slot_table, offboard). `slot_table` is the ordered
@@ -149,10 +165,7 @@ def discover(lead_campaigns=(), first_day=None, today=None):
         auto.setdefault(slot, auto_group(slot))
         return slot, True
 
-    with cf.ThreadPoolExecutor(max_workers=2) as ex:
-        f_src = ex.submit(paged, "sources", {"pageSize": 250, "integrationType": "FACEBOOK"})
-        f_ads = ex.submit(paged, "ads", {"pageSize": 250, "integrationType": "FACEBOOK"})
-        src_rows, ad_rows_raw = f_src.result(), f_ads.result()
+    src_rows, ad_rows_raw = rows
     for s in src_rows:
         camp = ((s.get("category") or {}).get("name")) or ""
         slot, _auto = resolve(camp)
@@ -250,7 +263,7 @@ def attribution(ids, level, start, end):
     return out
 
 
-def tagged_leads():
+def tagged_leads(first_day, today):
     """All tagged leads, counted per ad and per ad per calendar day.
 
     creationDate comes back in the account's own timezone, so its first ten
@@ -262,7 +275,15 @@ def tagged_leads():
     earns its place on the board, and how an ad found holding leads can be told
     apart from one that belongs to a campaign kept off it deliberately.
     """
-    rows = paged("leads", {"pageSize": 250, "tags": TAG})
+    # Pulled in three-hour slices of creation time, side by side, rather than down one
+    # cursor (five minutes at 60,000 leads). The outer slices run from 2000 to 2099, so a
+    # lead created before the summit and tagged since still comes back, as it did when
+    # the pull had no dates at all.
+    lo = dt.datetime.fromisoformat(first_day)
+    hi = dt.datetime.fromisoformat(today) + dt.timedelta(days=1)
+    wins = windows(dt.datetime(2000, 1, 1), dt.datetime(2099, 12, 31, 23, 59, 59), 3,
+                   _RUN, grid_from=lo, grid_to=hi)
+    rows = paged_windows("leads", {"pageSize": 250, "tags": TAG}, wins)
     per_ad, per_campaign_name, paid = collections.Counter(), collections.Counter(), 0
     per_day = collections.defaultdict(collections.Counter)
     ad_campaign = {}
@@ -281,7 +302,12 @@ def tagged_leads():
 
 def tagged_sales(start, end, summit_ads):
     """Sales in the window whose lead carries the tag, credited to the summit ad touch."""
-    rows = paged("sales", {"pageSize": 250, "fromDate": start, "toDate": end})
+    # One window per day, side by side: 4s against 29s down a single cursor. The same
+    # sales as the date-only start..end query (checked 2026-09-18); the day a sale is
+    # filed under still comes from its own timestamp in _norm_date, never its window.
+    lo = dt.datetime.fromisoformat(start)
+    hi = dt.datetime.fromisoformat(end).replace(hour=23, minute=59, second=59)
+    rows = paged_windows("sales", {"pageSize": 250}, windows(lo, hi, 24, _RUN))
     ledger, per_ad = [], collections.Counter()
     rev_per_ad = collections.Counter()
     for s in rows:
@@ -368,6 +394,18 @@ def account_now():
         return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
+def account_stamp(utc_iso):
+    """'2026-09-17T15:35:27' (UTC, as Windsor reports it) -> '2026-09-17 08:35 PDT'."""
+    if not utc_iso:
+        return ""
+    try:
+        from zoneinfo import ZoneInfo
+        t = dt.datetime.fromisoformat(str(utc_iso).rstrip("Z")).replace(tzinfo=dt.timezone.utc)
+        return t.astimezone(ZoneInfo(ACCOUNT_TZ)).strftime("%Y-%m-%d %H:%M %Z")
+    except Exception:
+        return f"{str(utc_iso)[:16].replace('T', ' ')} UTC"
+
+
 def account_today():
     try:
         from zoneinfo import ZoneInfo
@@ -401,12 +439,16 @@ def main():
     # Leads are pulled BEFORE discovery so a campaign can earn its place by holding
     # them, not only by being named the way this summit's campaigns have been named
     # so far. Naming has already changed once here.
-    print("pulling tagged leads...")
-    lead_rows, leads_per_ad, leads_per_day, paid_raw, lead_campaigns, ad_campaign = tagged_leads()
+    print("pulling tagged leads, and the Hyros campaign lists alongside...")
+    with cf.ThreadPoolExecutor(max_workers=1) as bg:
+        f_disc = bg.submit(discovery_rows)
+        lead_rows, leads_per_ad, leads_per_day, paid_raw, lead_campaigns, ad_campaign = \
+            tagged_leads(first_day, today)
+        disc_rows = f_disc.result()
     print(f"  {len(lead_rows)} tagged, {paid_raw} ad-attributed")
 
     print("discovering summit campaigns, ad sets and ads...")
-    adsets, ads, slot_table, offboard = discover(lead_campaigns, first_day, today)
+    adsets, ads, slot_table, offboard = discover(disc_rows, lead_campaigns, first_day, today)
     added = [sl for sl, _g, is_auto in slot_table if is_auto]
     if added:
         print("  on the board automatically, not named in SLOTS: " + ", ".join(added))
@@ -491,6 +533,8 @@ def main():
     except Exception as e:
         cost_source = "hyros"
         cost_note = f"{type(e).__name__}: {e}"
+        # Reaching here means Graph failed AND Windsor.ai did too (or has no key):
+        # meta_cost switches road by itself before giving up.
         print(f"  Meta unavailable ({cost_note}); falling back to Hyros cost, which lags")
         per_day_attr = {}
         with cf.ThreadPoolExecutor(max_workers=4) as ex:
@@ -508,9 +552,18 @@ def main():
     # Taken here, straight after the sweep, so the gap against the campaign rows is
     # seconds rather than minutes.
     print("pulling ad-level attribution...")
+    cost_via, cost_via_note, cost_via_as_of = "", "", ""
     if cost_source == "meta":
-        from meta_cost import cost_by_ad
+        from meta_cost import cost_by_ad, ROUTE
         ad_run = cost_by_ad(list(ads), days[0], today)
+        # Taken now, before the lead count and hidden-campaign check below: a failure
+        # there must not relabel spend that was already read through Graph.
+        cost_via, cost_via_note = ROUTE["via"], ROUTE["note"]
+        if cost_via == "windsor":
+            # When Windsor really fetched from Meta, which a cache hit would push back.
+            cost_via_as_of = account_stamp(ROUTE["as_of"])
+            print("  spend read through Windsor.ai (same Meta figures, Graph was unavailable), "
+                  f"fetched from Meta {cost_via_as_of or 'at an unknown time'}")
     else:
         ad_run = attribution(list(ads), "facebook_ad", first_day, today)
 
@@ -627,7 +680,14 @@ def main():
         "note_running_equals_today": today == first_day,
         "cost_source": cost_source,
         "cost_source_note": cost_note,
-        "cost_source_label": ("Meta Ads (spend, link clicks, impressions)" if cost_source == "meta"
+        # "graph" or "windsor" when cost_source is meta. Both are Meta's billed figures;
+        # Windsor.ai is the second road to them when Meta's own API refuses the token.
+        "cost_via": cost_via,
+        "cost_via_note": cost_via_note,
+        "cost_via_as_of": cost_via_as_of,
+        "cost_source_label": (("Meta Ads via Windsor.ai (spend, link clicks, impressions)"
+                               if cost_via == "windsor" else
+                               "Meta Ads (spend, link clicks, impressions)") if cost_source == "meta"
                               else "Hyros relayed cost - Meta was unreachable, so these lag"),
         "hidden_campaign_spend": hidden_spend,
         "meta_reported_leads": meta_leads,

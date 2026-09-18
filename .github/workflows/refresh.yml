@@ -28,6 +28,7 @@ on:
       - pull.py
       - hyros_api.py
       - build_dashboard.py
+      - meta_cost.py
       - config.json
       - .github/workflows/refresh.yml
 
@@ -62,6 +63,9 @@ jobs:
           # but on Hyros' relayed cost, which lags Meta by roughly 7% and would put the
           # published page out of step with both Ads Manager and the local dashboard.
           FB_TOKEN: ${{ secrets.FB_TOKEN }}
+          # Second road to the same Meta spend when Graph throttles the dev-tier token.
+          # Optional: unset, meta_cost.py behaves exactly as it did without Windsor.
+          WINDSOR_API_KEY: ${{ secrets.WINDSOR_API_KEY }}
         run: |
           if [ -z "$HYROS_API_KEY" ]; then
             echo "::error::HYROS_API_KEY is not set in Actions Secrets."

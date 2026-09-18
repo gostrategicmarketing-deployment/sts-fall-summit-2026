@@ -1052,6 +1052,17 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       card. Hyros relays cost rather than measuring it, and relays it late, so taking spend from Meta
       is what keeps this page matching Ads Manager to the cent. Ad sets are matched by ID, never by
       campaign name, so no other campaign in either account can leak in.</p>
+      {('<p><b>This pull read Meta&rsquo;s figures through Windsor.ai</b>, because Meta&rsquo;s own '
+        'API was turning requests away at the time. Windsor reads the same billed numbers from the same '
+        'two ad accounts'
+        + (f', and fetched these from Meta at {esc(usdate_stamp(M["cost_via_as_of"]))}'
+           if M.get("cost_via_as_of") else '')
+        + '.</p>')
+       if M.get("cost_source") == "meta" and M.get("cost_via") == "windsor" else ''}
+      {('<p><b>Meta could not be reached for this pull</b>, directly or through Windsor.ai, so spend, '
+        'link clicks and impressions here are Hyros&rsquo; relayed figures. They run a little behind '
+        'what Meta bills and will read lower than Ads Manager until the next refresh.</p>')
+       if M.get("cost_source") == "hyros" else ''}
       <p>Creative previews are pulled from the Meta Ads API too, so they keep working after Meta's own
       image links expire.</p>
     </div>
