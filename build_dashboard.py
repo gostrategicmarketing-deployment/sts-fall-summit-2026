@@ -548,9 +548,9 @@ WORKFLOW_URL = ("https://github.com/gostrategicmarketing-deployment/"
 # The shared copy has no button, so telling its reader to "press Refresh" points at a
 # control that is not there, and a build command is nobody's business but ours.
 FOOTER_NOTES = (
-    "  <span>Rebuilt on request, not on a timer</span>\n"
+    "  <span>Rebuilt each time the numbers are re-pulled</span>\n"
     if REDACT else
-    "  <span>Press Refresh to re-pull Hyros; nothing runs on a timer</span>\n"
+    "  <span>serve.py re-pulls on a timer (every 15 minutes by default); Refresh pulls now</span>\n"
     "  <span>Rebuild locally: <code class=\"seq\">python3 build_dashboard.py</code></span>\n"
 )
 
@@ -558,7 +558,8 @@ REFRESH_UI = "" if REDACT else (
     '<button type="button" id="refreshBtn" class="refresh-btn" hidden>'
     '<span class="rb-dot"></span><span class="rb-ring" aria-hidden="true"></span>'
     '<span id="rbLabel">Refresh</span></button>'
-    '<span id="rbErr" class="rb-err" hidden></span>')
+    '<span id="rbErr" class="rb-err" hidden></span>'
+    '<span id="rbNote" class="rb-note" hidden></span>')
 
 # GitHub Pages serves every file with `cache-control: max-age=600` and that is not
 # configurable, so for ten minutes after a rebuild both Fastly and the reader's browser
@@ -666,7 +667,7 @@ h1,h2,h3 {{ font-family:var(--f-display); font-weight:400; text-wrap:balance; ma
 .refresh-btn:active {{ transform:translateY(1px); }}
 /* Author display wins over the UA [hidden] rule, so say it explicitly or a button the
    script never wires up still renders, full size and completely dead. */
-.refresh-btn[hidden], .rb-err[hidden] {{ display:none !important; }}
+.refresh-btn[hidden], .rb-err[hidden], .rb-note[hidden] {{ display:none !important; }}
 .refresh-link {{ text-decoration:none; }}
 .rb-ext {{ font-size:13px; opacity:.75; }}
 /* On the published copy this is the headline of the masthead: a static page cannot be
@@ -683,6 +684,8 @@ h1,h2,h3 {{ font-family:var(--f-display); font-weight:400; text-wrap:balance; ma
 @keyframes rbpulse {{ 0%,100% {{ opacity:1; }} 50% {{ opacity:.25; }} }}
 .rb-err {{ display:block; font-size:12px; color:var(--bad); max-width:34ch;
   margin-bottom:8px; text-align:right; }}
+.rb-note {{ display:block; font-size:12px; color:var(--text-2); margin:6px 0 8px;
+  text-align:right; font-variant-numeric:tabular-nums; }}
 
 /* ---- refresh progress ---- */
 /* A 21-second wait needs more than a pulsing dot. The bar advances stage by stage and
@@ -1102,16 +1105,18 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <div class="mcard mcard-refresh">
       <h3>Refreshing this page</h3>
       {"".join([
-        "<p>This copy is rebuilt on request, not on a timer. Someone with the dashboard open "
-        "presses Refresh, which re-pulls Hyros and rebuilds this page a couple of minutes later.</p>"
+        "<p>This copy is rebuilt each time the numbers are re-pulled: every 15 minutes while the "
+        "team's dashboard is running, and whenever someone there presses Refresh. Each pull reaches "
+        "this page a couple of minutes later.</p>"
         "<p>The timestamp above is the pull it was built from, in the ad account's time zone.</p>"
       ]) if REDACT else "".join([
         "<p>Two ways, neither of which needs Claude:</p>",
-        "<p><b>Locally, right now.</b> Double-click <span class='askline'>Fall Summit Dashboard.command</span> "
-        "and press Refresh on the page. It re-pulls Hyros and rebuilds in one click.</p>",
-        "<p>The same press also rebuilds <b>the shared copy</b> at "
+        "<p><b>Locally.</b> Double-click <span class='askline'>Fall Summit Dashboard.command</span>. "
+        "While that window is open the page re-pulls Hyros and Meta by itself every 15 minutes and "
+        "reloads onto the new numbers; press Refresh to pull right now.</p>",
+        "<p>Every pull, timed or pressed, also rebuilds <b>the shared copy</b> at "
         "<span class='askline'>gostrategicmarketing-deployment.github.io/sts-fall-summit-2026/</span>, "
-        "with buyer names redacted. Nothing runs on a timer.</p>",
+        "with buyer names redacted. With the Mac asleep or the window closed, both stop at the last pull.</p>",
       ])}
     </div>
     <div class="mcard">
@@ -1197,8 +1202,9 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 // Refresh button. Only useful when serve.py is hosting the page, since a static host
 // has nothing to POST to; the published copy is rebuilt by the same press via Actions.
 //
-// The refresh takes roughly twenty seconds: Hyros is paged for leads, sales and a
-// window per day, then the page is rebuilt. Earlier this button just sat there for
+// The refresh takes about a minute (it was twenty seconds at launch, six minutes at
+// 60,000 leads before the pull went parallel): Hyros is paged for leads and sales,
+// Meta for spend, then the page is rebuilt. Earlier this button just sat there for
 // that whole time and a second press got a 409, which read as "it did not work". It
 // now polls for the live stage and a second press simply joins the run in flight.
 (function () {{
@@ -1296,6 +1302,49 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       .then(function () {{ setTimeout(poll, 350); }})
       .catch(function (e) {{ fail(e.message || String(e)); }});
   }});
+
+  // serve.py also refreshes by itself on a timer (--every, 15 minutes by default). Watch
+  // for one starting and ride along exactly as if the button had been pressed: the bar
+  // shows the stages and the page reloads onto the new numbers. A run that started and
+  // finished while this tab was asleep is caught by its done_at instead.
+  var note = document.getElementById('rbNote'), loadedAt = Date.now() / 1000;
+  // In the ad account's timezone, like "Pulled" beside it and every other time on the
+  // page. The browser's own zone would put Eastern next to Pacific on one masthead.
+  function clock(t) {{
+    return new Date(t * 1000).toLocaleTimeString('en-US', {{ hour: 'numeric', minute: '2-digit',
+      timeZone: 'America/Los_Angeles', timeZoneName: 'short' }});
+  }}
+  function watch() {{
+    // A pressed (or already joined) refresh is being polled; do not start a second poll.
+    if (btn.disabled) {{ setTimeout(watch, 15000); return; }}
+    fetch('/status', {{ cache: 'no-store' }})
+      .then(function (r) {{ return r.ok ? r.json() : null; }})
+      .then(function (s) {{
+        if (!s) return;
+        if (s.every_min > 0) {{
+          note.textContent = 'Refreshes itself every ' + s.every_min + ' min'
+                           + (s.next_at ? ' \u00b7 next ' + clock(s.next_at) : '');
+          note.hidden = false;
+        }}
+        if (s.running) {{
+          btn.disabled = true;
+          err.hidden = true;
+          pct = 0;
+          document.body.classList.add('is-refreshing');
+          stageTo(s.stage);
+          poll();
+          return;
+        }}
+        if (s.done_at > loadedAt && !s.error) {{
+          location.replace(location.pathname + '?t=' + Date.now());
+          return 'reloading';
+        }}
+        if (s.error && s.done_at > loadedAt) {{ err.textContent = s.error; err.hidden = false; }}
+      }})
+      .catch(function () {{}})
+      .then(function (state) {{ if (state !== 'reloading') setTimeout(watch, 15000); }});
+  }}
+  setTimeout(watch, 1000);
 }})();
 </script>
 {STALE_JS}"""
