@@ -70,7 +70,7 @@ h1,h2,h3 { font-family:var(--f-display); font-weight:400; text-wrap:balance; mar
 .refresh-btn:active { transform:translateY(1px); }
 /* Author display wins over the UA [hidden] rule, so say it explicitly or a button the
    script never wires up still renders, full size and completely dead. */
-.refresh-btn[hidden], .rb-err[hidden] { display:none !important; }
+.refresh-btn[hidden], .rb-err[hidden], .rb-note[hidden] { display:none !important; }
 .refresh-link { text-decoration:none; }
 .rb-ext { font-size:13px; opacity:.75; }
 /* On the published copy this is the headline of the masthead: a static page cannot be
@@ -87,6 +87,8 @@ h1,h2,h3 { font-family:var(--f-display); font-weight:400; text-wrap:balance; mar
 @keyframes rbpulse { 0%,100% { opacity:1; } 50% { opacity:.25; } }
 .rb-err { display:block; font-size:12px; color:var(--bad); max-width:34ch;
   margin-bottom:8px; text-align:right; }
+.rb-note { display:block; font-size:12px; color:var(--text-2); margin:6px 0 8px;
+  text-align:right; font-variant-numeric:tabular-nums; }
 
 /* ---- refresh progress ---- */
 /* A 21-second wait needs more than a pulsing dot. The bar advances stage by stage and
@@ -318,7 +320,7 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </div>
   <div class="stamp">
     
-    <div class="fresh"><span class="fresh-lab">Data updated</span><span class="fresh-time">7:10 am PDT</span><span class="fresh-date">Friday, September 18, 2026</span></div>
+    <div class="fresh"><span class="fresh-lab">Data updated</span><span class="fresh-time">7:21 am PDT</span><span class="fresh-date">Friday, September 18, 2026</span></div>
     Times are the ad account's<br>
     Registrations and sales: Hyros<br>
     Spend and clicks: Meta<br>
@@ -339,7 +341,7 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
         <span class="deck-tag">9/18/2026</span>
         <p class="deck-note">Midnight to now, account time zone</p>
       </div>
-      <div class="grid"><div class="kpi"><span class="kpi-lab">Leads</span><span class="kpi-val">1,533</span><span class="kpi-sub">registrations tagged !summit-2026</span></div><div class="kpi"><span class="kpi-lab">Cost per lead</span><span class="kpi-val">$1.29</span></div><div class="kpi"><span class="kpi-lab">Link clicks</span><span class="kpi-val">4,558</span></div><div class="kpi"><span class="kpi-lab">Cost per click</span><span class="kpi-val">$0.43</span></div><div class="kpi"><span class="kpi-lab">Spend</span><span class="kpi-val">$1,977.44</span><span class="kpi-sub">both ad accounts</span></div><div class="kpi"><span class="kpi-lab">Page conversion</span><span class="kpi-val">33.6%</span><span class="kpi-sub">leads &divide; link clicks</span></div><div class="kpi"><span class="kpi-lab">Purchases</span><span class="kpi-val">37</span></div><div class="kpi"><span class="kpi-lab">Revenue</span><span class="kpi-val">$1,023.00</span></div><div class="kpi"><span class="kpi-lab">Cost per purchase</span><span class="kpi-val">$53.44</span></div><div class="kpi"><span class="kpi-lab">ROAS</span><span class="kpi-val">0.52x</span><span class="kpi-sub">break-even at 1.00x</span></div></div>
+      <div class="grid"><div class="kpi"><span class="kpi-lab">Leads</span><span class="kpi-val">1,575</span><span class="kpi-sub">registrations tagged !summit-2026</span></div><div class="kpi"><span class="kpi-lab">Cost per lead</span><span class="kpi-val">$1.30</span></div><div class="kpi"><span class="kpi-lab">Link clicks</span><span class="kpi-val">4,728</span></div><div class="kpi"><span class="kpi-lab">Cost per click</span><span class="kpi-val">$0.43</span></div><div class="kpi"><span class="kpi-lab">Spend</span><span class="kpi-val">$2,048.09</span><span class="kpi-sub">both ad accounts</span></div><div class="kpi"><span class="kpi-lab">Page conversion</span><span class="kpi-val">33.3%</span><span class="kpi-sub">leads &divide; link clicks</span></div><div class="kpi"><span class="kpi-lab">Purchases</span><span class="kpi-val">40</span></div><div class="kpi"><span class="kpi-lab">Revenue</span><span class="kpi-val">$1,098.00</span></div><div class="kpi"><span class="kpi-lab">Cost per purchase</span><span class="kpi-val">$51.20</span></div><div class="kpi"><span class="kpi-lab">ROAS</span><span class="kpi-val">0.54x</span><span class="kpi-sub">break-even at 1.00x</span></div></div>
     </div>
     <div class="deck deck-run">
       <div class="deck-head">
@@ -347,7 +349,7 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
         <span class="deck-tag">9/7/2026 to 9/18/2026</span>
         <p class="deck-note">Every day the Fall Summit campaigns have run</p>
       </div>
-      <div class="grid"><div class="kpi"><span class="kpi-lab">Leads</span><span class="kpi-val">57,744</span><span class="kpi-sub">registrations tagged !summit-2026</span></div><div class="kpi"><span class="kpi-lab">Cost per lead</span><span class="kpi-val">$1.35</span></div><div class="kpi"><span class="kpi-lab">Link clicks</span><span class="kpi-val">197,671</span></div><div class="kpi"><span class="kpi-lab">Cost per click</span><span class="kpi-val">$0.39</span></div><div class="kpi"><span class="kpi-lab">Spend</span><span class="kpi-val">$77,719.27</span><span class="kpi-sub">both ad accounts</span></div><div class="kpi"><span class="kpi-lab">Page conversion</span><span class="kpi-val">29.2%</span><span class="kpi-sub">leads &divide; link clicks</span></div><div class="kpi"><span class="kpi-lab">Purchases</span><span class="kpi-val">1,788</span></div><div class="kpi"><span class="kpi-lab">Revenue</span><span class="kpi-val">$44,924.98</span></div><div class="kpi"><span class="kpi-lab">Cost per purchase</span><span class="kpi-val">$43.47</span></div><div class="kpi"><span class="kpi-lab">ROAS</span><span class="kpi-val">0.58x</span><span class="kpi-sub">break-even at 1.00x</span></div></div>
+      <div class="grid"><div class="kpi"><span class="kpi-lab">Leads</span><span class="kpi-val">57,786</span><span class="kpi-sub">registrations tagged !summit-2026</span></div><div class="kpi"><span class="kpi-lab">Cost per lead</span><span class="kpi-val">$1.35</span></div><div class="kpi"><span class="kpi-lab">Link clicks</span><span class="kpi-val">197,848</span></div><div class="kpi"><span class="kpi-lab">Cost per click</span><span class="kpi-val">$0.39</span></div><div class="kpi"><span class="kpi-lab">Spend</span><span class="kpi-val">$77,791.67</span><span class="kpi-sub">both ad accounts</span></div><div class="kpi"><span class="kpi-lab">Page conversion</span><span class="kpi-val">29.2%</span><span class="kpi-sub">leads &divide; link clicks</span></div><div class="kpi"><span class="kpi-lab">Purchases</span><span class="kpi-val">1,791</span></div><div class="kpi"><span class="kpi-lab">Revenue</span><span class="kpi-val">$44,999.98</span></div><div class="kpi"><span class="kpi-lab">Cost per purchase</span><span class="kpi-val">$43.43</span></div><div class="kpi"><span class="kpi-lab">ROAS</span><span class="kpi-val">0.58x</span><span class="kpi-sub">break-even at 1.00x</span></div></div>
     </div>
   </div>
 </section>
@@ -357,7 +359,7 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <h2>Registration funnel</h2>
     <p>Running total, both accounts. Rates are the step-to-step conversion.</p>
   </div>
-  <div class="funnel"><div class="fn-step"><span class="fn-val">7,137,476</span><span class="fn-lab">Impressions</span></div><div class="fn-gap"><span class="fn-rate">2.8%</span><span class="fn-rname">click-through</span></div><div class="fn-step"><span class="fn-val">197,671</span><span class="fn-lab">Link clicks</span></div><div class="fn-gap"><span class="fn-rate">29.2%</span><span class="fn-rname">page conversion</span></div><div class="fn-step"><span class="fn-val">57,744</span><span class="fn-lab">Leads</span></div><div class="fn-gap"><span class="fn-rate">3.1%</span><span class="fn-rname">lead to sale</span></div><div class="fn-step"><span class="fn-val">1,788</span><span class="fn-lab">Purchases</span></div></div>
+  <div class="funnel"><div class="fn-step"><span class="fn-val">7,143,705</span><span class="fn-lab">Impressions</span></div><div class="fn-gap"><span class="fn-rate">2.8%</span><span class="fn-rname">click-through</span></div><div class="fn-step"><span class="fn-val">197,848</span><span class="fn-lab">Link clicks</span></div><div class="fn-gap"><span class="fn-rate">29.2%</span><span class="fn-rname">page conversion</span></div><div class="fn-step"><span class="fn-val">57,786</span><span class="fn-lab">Leads</span></div><div class="fn-gap"><span class="fn-rate">3.1%</span><span class="fn-rname">lead to sale</span></div><div class="fn-step"><span class="fn-val">1,791</span><span class="fn-lab">Purchases</span></div></div>
 </section>
 
 <section>
@@ -478,16 +480,16 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="cmeta"><span class="acct acct-sts">STS</span><span class="acct acct-tsa">TSA</span>22 of 33 ad sets live</span>
   </th>
   <td class="st"><span class="pill pill-live">Delivering</span></td>
-  <td class="n">$8,955.59<span class="bar bar-spend"><span style="width:38.3%"></span></span></td>
-  <td class="n">6,074<span class="bar bar-leads"><span style="width:35.5%"></span></span></td>
-  <td class="n">$1.47</td>
-  <td class="n">16,928</td>
+  <td class="n">$8,972.43<span class="bar bar-spend"><span style="width:38.4%"></span></span></td>
+  <td class="n">6,078<span class="bar bar-leads"><span style="width:35.5%"></span></span></td>
+  <td class="n">$1.48</td>
+  <td class="n">16,957</td>
   <td class="n">$0.53</td>
-  <td class="n">35.9%</td>
+  <td class="n">35.8%</td>
   <td class="n">103</td>
   <td class="n">1.7%</td>
   <td class="n">$2,620.00</td>
-  <td class="n">$86.95</td>
+  <td class="n">$87.11</td>
   <td class="n hi">0.29x</td>
 </tr>
 <tr class="">
@@ -497,16 +499,16 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="cmeta"><span class="acct acct-sts">STS</span><span class="acct acct-tsa">TSA</span>21 of 35 ad sets live</span>
   </th>
   <td class="st"><span class="pill pill-live">Delivering</span></td>
-  <td class="n">$9,390.32<span class="bar bar-spend"><span style="width:40.2%"></span></span></td>
-  <td class="n">6,605<span class="bar bar-leads"><span style="width:38.6%"></span></span></td>
+  <td class="n">$9,393.75<span class="bar bar-spend"><span style="width:40.2%"></span></span></td>
+  <td class="n">6,609<span class="bar bar-leads"><span style="width:38.6%"></span></span></td>
   <td class="n">$1.42</td>
-  <td class="n">23,097</td>
+  <td class="n">23,106</td>
   <td class="n">$0.41</td>
   <td class="n">28.6%</td>
   <td class="n">352</td>
   <td class="n">5.3%</td>
   <td class="n">$8,829.99</td>
-  <td class="n">$26.68</td>
+  <td class="n">$26.69</td>
   <td class="n hi">0.94x</td>
 </tr>
 <tr class="">
@@ -516,31 +518,31 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="cmeta"><span class="acct acct-sts">STS</span><span class="acct acct-tsa">TSA</span>19 of 20 ad sets live</span>
   </th>
   <td class="st"><span class="pill pill-live">Delivering</span></td>
-  <td class="n">$7,785.19<span class="bar bar-spend"><span style="width:33.3%"></span></span></td>
-  <td class="n">6,411<span class="bar bar-leads"><span style="width:37.5%"></span></span></td>
+  <td class="n">$7,793.85<span class="bar bar-spend"><span style="width:33.3%"></span></span></td>
+  <td class="n">6,417<span class="bar bar-leads"><span style="width:37.5%"></span></span></td>
   <td class="n">$1.21</td>
-  <td class="n">18,553</td>
+  <td class="n">18,569</td>
   <td class="n">$0.42</td>
   <td class="n">34.6%</td>
   <td class="n">197</td>
   <td class="n">3.1%</td>
   <td class="n">$4,661.50</td>
-  <td class="n">$39.52</td>
+  <td class="n">$39.56</td>
   <td class="n hi">0.60x</td>
 </tr>
 <tr class="row-sub">
   <th scope="row"><span class="slot">8 named campaigns</span></th>
   <td class="st"></td>
-  <td class="n">$31,478.77</td>
-  <td class="n">21,482</td>
+  <td class="n">$31,507.70</td>
+  <td class="n">21,496</td>
   <td class="n">$1.47</td>
-  <td class="n">67,053</td>
+  <td class="n">67,107</td>
   <td class="n">$0.47</td>
   <td class="n">32.0%</td>
   <td class="n">736</td>
   <td class="n">3.4%</td>
   <td class="n">$19,145.49</td>
-  <td class="n">$42.77</td>
+  <td class="n">$42.81</td>
   <td class="n hi">0.61x</td>
 </tr>
 <tr class="">
@@ -550,16 +552,16 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="cmeta"><span class="acct acct-sts">STS</span>2 of 2 ad sets live</span>
   </th>
   <td class="st"><span class="pill pill-live">Delivering</span></td>
-  <td class="n">$19,587.39<span class="bar bar-spend"><span style="width:83.8%"></span></span></td>
-  <td class="n">14,779<span class="bar bar-leads"><span style="width:86.4%"></span></span></td>
+  <td class="n">$19,603.17<span class="bar bar-spend"><span style="width:83.8%"></span></span></td>
+  <td class="n">14,785<span class="bar bar-leads"><span style="width:86.4%"></span></span></td>
   <td class="n">$1.33</td>
-  <td class="n">48,963</td>
+  <td class="n">48,994</td>
   <td class="n">$0.40</td>
   <td class="n">30.2%</td>
-  <td class="n">368</td>
+  <td class="n">369</td>
   <td class="n">2.5%</td>
-  <td class="n">$9,163.50</td>
-  <td class="n">$53.23</td>
+  <td class="n">$9,191.50</td>
+  <td class="n">$53.13</td>
   <td class="n hi">0.47x</td>
 </tr>
 <tr class="">
@@ -569,16 +571,16 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="cmeta"><span class="acct acct-tsa">TSA</span>1 of 2 ad sets live</span>
   </th>
   <td class="st"><span class="pill pill-live">Delivering</span></td>
-  <td class="n">$23,385.64<span class="bar bar-spend"><span style="width:100.0%"></span></span></td>
-  <td class="n">17,101<span class="bar bar-leads"><span style="width:100.0%"></span></span></td>
+  <td class="n">$23,394.19<span class="bar bar-spend"><span style="width:100.0%"></span></span></td>
+  <td class="n">17,105<span class="bar bar-leads"><span style="width:100.0%"></span></span></td>
   <td class="n">$1.37</td>
-  <td class="n">67,854</td>
+  <td class="n">67,886</td>
   <td class="n">$0.34</td>
   <td class="n">25.2%</td>
   <td class="n">564</td>
   <td class="n">3.3%</td>
   <td class="n">$13,619.99</td>
-  <td class="n">$41.46</td>
+  <td class="n">$41.48</td>
   <td class="n hi">0.58x</td>
 </tr>
 <tr class="">
@@ -588,17 +590,17 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="cmeta"><span class="acct acct-sts">STS</span>1 of 1 ad sets live</span>
   </th>
   <td class="st"><span class="pill pill-live">Delivering</span></td>
-  <td class="n">$2,148.05<span class="bar bar-spend"><span style="width:9.2%"></span></span></td>
-  <td class="n">2,284<span class="bar bar-leads"><span style="width:13.4%"></span></span></td>
+  <td class="n">$2,156.41<span class="bar bar-spend"><span style="width:9.2%"></span></span></td>
+  <td class="n">2,290<span class="bar bar-leads"><span style="width:13.4%"></span></span></td>
   <td class="n">$0.94</td>
-  <td class="n">8,685</td>
+  <td class="n">8,713</td>
   <td class="n">$0.25</td>
   <td class="n">26.3%</td>
   <td class="n">59</td>
   <td class="n">2.6%</td>
   <td class="n">$1,603.00</td>
-  <td class="n">$36.41</td>
-  <td class="n hi">0.75x</td>
+  <td class="n">$36.55</td>
+  <td class="n hi">0.74x</td>
 </tr>
 <tr class="">
   <th scope="row">
@@ -607,46 +609,46 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="cmeta"><span class="acct acct-tsa">TSA</span>1 of 1 ad sets live</span>
   </th>
   <td class="st"><span class="pill pill-live">Delivering</span></td>
-  <td class="n">$1,119.42<span class="bar bar-spend"><span style="width:4.8%"></span></span></td>
-  <td class="n">2,098<span class="bar bar-leads"><span style="width:12.3%"></span></span></td>
-  <td class="n">$0.53</td>
-  <td class="n">5,116</td>
+  <td class="n">$1,130.20<span class="bar bar-spend"><span style="width:4.8%"></span></span></td>
+  <td class="n">2,110<span class="bar bar-leads"><span style="width:12.3%"></span></span></td>
+  <td class="n">$0.54</td>
+  <td class="n">5,148</td>
   <td class="n">$0.22</td>
   <td class="n">41.0%</td>
-  <td class="n">61</td>
-  <td class="n">2.9%</td>
-  <td class="n">$1,393.00</td>
-  <td class="n">$18.35</td>
-  <td class="n hi">1.24x</td>
+  <td class="n">63</td>
+  <td class="n">3.0%</td>
+  <td class="n">$1,440.00</td>
+  <td class="n">$17.94</td>
+  <td class="n hi">1.27x</td>
 </tr>
 <tr class="row-sub">
   <th scope="row"><span class="slot">4 scaling campaigns</span></th>
   <td class="st"></td>
-  <td class="n">$46,240.50</td>
-  <td class="n">36,262</td>
+  <td class="n">$46,283.97</td>
+  <td class="n">36,290</td>
   <td class="n">$1.28</td>
-  <td class="n">130,618</td>
+  <td class="n">130,741</td>
   <td class="n">$0.35</td>
   <td class="n">27.8%</td>
-  <td class="n">1,052</td>
+  <td class="n">1,055</td>
   <td class="n">2.9%</td>
-  <td class="n">$25,779.49</td>
-  <td class="n">$43.95</td>
+  <td class="n">$25,854.49</td>
+  <td class="n">$43.87</td>
   <td class="n hi">0.56x</td>
 </tr>
 <tr class="row-total">
   <th scope="row"><span class="slot">All campaigns</span><span class="cmeta">12 campaigns, both accounts</span></th>
   <td class="st"></td>
-  <td class="n">$77,719.27</td>
-  <td class="n">57,744</td>
+  <td class="n">$77,791.67</td>
+  <td class="n">57,786</td>
   <td class="n">$1.35</td>
-  <td class="n">197,671</td>
+  <td class="n">197,848</td>
   <td class="n">$0.39</td>
   <td class="n">29.2%</td>
-  <td class="n">1,788</td>
+  <td class="n">1,791</td>
   <td class="n">3.1%</td>
-  <td class="n">$44,924.98</td>
-  <td class="n">$43.47</td>
+  <td class="n">$44,999.98</td>
+  <td class="n">$43.43</td>
   <td class="n hi">0.58x</td>
 </tr></tbody>
     </table>
@@ -678,10 +680,10 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   <p class="hero-name">Video | Style 3 | Video 3 V2 Wide Screen | AC 1 - Copy 2</p>
   <p class="hero-meta"><span class="acct acct-sts">STS</span>Scaling campaign<span class="sep">&middot;</span>Scaling Campaign 1</p>
   <div class="hero-stats">
-    <span><b>$5,511.00</b>revenue</span>
-    <span><b>$11,029.82</b>spend</span>
+    <span><b>$5,539.00</b>revenue</span>
+    <span><b>$11,038.75</b>spend</span>
     <span><b>0.50x</b>ROAS</span>
-    <span><b>8,695</b>leads</span>
+    <span><b>8,700</b>leads</span>
   </div>
   </div></div>
 </div><div class="hero-ad">
@@ -705,7 +707,7 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   <p class="hero-meta"><code class="seq">sts0624</code><span class="acct acct-sts">STS</span>Scaling campaign<span class="sep">&middot;</span>Scaling Campaign 1</p>
   <div class="hero-stats">
     <span><b>$1,513.00</b>revenue</span>
-    <span><b>$3,911.04</b>spend</span>
+    <span><b>$3,915.48</b>spend</span>
     <span><b>0.39x</b>ROAS</span>
     <span><b>2,775</b>leads</span>
   </div>
@@ -718,9 +720,9 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   <p class="hero-meta"><span class="acct acct-sts">STS</span>Video campaign<span class="sep">&middot;</span>Video | Style 3 | AC 1</p>
   <div class="hero-stats">
     <span><b>$1,228.00</b>revenue</span>
-    <span><b>$983.92</b>spend</span>
+    <span><b>$984.88</b>spend</span>
     <span><b>1.25x</b>ROAS</span>
-    <span><b>1,391</b>leads</span>
+    <span><b>1,392</b>leads</span>
   </div>
   </div></div>
 </div><div class="hero-ad">
@@ -770,7 +772,7 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   <p class="hero-meta"><code class="seq">sts0247</code><span class="acct acct-sts">STS</span>Grid campaign<span class="sep">&middot;</span>Grid | Style 4 | AC 1</p>
   <div class="hero-stats">
     <span><b>$745.00</b>revenue</span>
-    <span><b>$1,090.76</b>spend</span>
+    <span><b>$1,092.04</b>spend</span>
     <span><b>0.68x</b>ROAS</span>
     <span><b>939</b>leads</span>
   </div>
@@ -827,10 +829,10 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </th>
   <td class="n">2,775<span class="bar bar-leads"><span style="width:23.7%"></span></span></td>
   <td class="n">$1.41</td>
-  <td class="n">$3,911.04</td>
-  <td class="n">10,070</td>
-  <td class="n">27.6%</td>
-  <td class="n">435,354</td>
+  <td class="n">$3,915.48</td>
+  <td class="n">10,084</td>
+  <td class="n">27.5%</td>
+  <td class="n">435,831</td>
   <td class="n">64</td>
   <td class="n">$1,513.00</td>
 </tr>
@@ -843,12 +845,12 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
     <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860374317290791" target="_blank" rel="noopener">Ads Manager</a></span>
   </th>
-  <td class="n">1,489<span class="bar bar-leads"><span style="width:12.7%"></span></span></td>
+  <td class="n">1,490<span class="bar bar-leads"><span style="width:12.7%"></span></span></td>
   <td class="n">$1.13</td>
-  <td class="n">$1,683.94</td>
-  <td class="n">4,176</td>
-  <td class="n">35.7%</td>
-  <td class="n">246,219</td>
+  <td class="n">$1,686.18</td>
+  <td class="n">4,181</td>
+  <td class="n">35.6%</td>
+  <td class="n">246,575</td>
   <td class="n">22</td>
   <td class="n">$508.00</td>
 </tr>
@@ -861,12 +863,12 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
     <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256248453360602" target="_blank" rel="noopener">Ads Manager</a></span>
   </th>
-  <td class="n">1,088<span class="bar bar-leads"><span style="width:9.3%"></span></span></td>
+  <td class="n">1,090<span class="bar bar-leads"><span style="width:9.3%"></span></span></td>
   <td class="n">$0.94</td>
-  <td class="n">$1,019.76</td>
-  <td class="n">4,169</td>
-  <td class="n">26.1%</td>
-  <td class="n">173,023</td>
+  <td class="n">$1,024.71</td>
+  <td class="n">4,191</td>
+  <td class="n">26.0%</td>
+  <td class="n">173,934</td>
   <td class="n">23</td>
   <td class="n">$703.00</td>
 </tr>
@@ -881,10 +883,10 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </th>
   <td class="n">971<span class="bar bar-leads"><span style="width:8.3%"></span></span></td>
   <td class="n">$1.25</td>
-  <td class="n">$1,211.38</td>
-  <td class="n">2,701</td>
+  <td class="n">$1,212.97</td>
+  <td class="n">2,703</td>
   <td class="n">35.9%</td>
-  <td class="n">108,639</td>
+  <td class="n">108,840</td>
   <td class="n">10</td>
   <td class="n">$235.00</td>
 </tr>
@@ -899,10 +901,10 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </th>
   <td class="n">939<span class="bar bar-leads"><span style="width:8.0%"></span></span></td>
   <td class="n">$1.16</td>
-  <td class="n">$1,090.76</td>
-  <td class="n">2,949</td>
+  <td class="n">$1,092.04</td>
+  <td class="n">2,951</td>
   <td class="n">31.8%</td>
-  <td class="n">98,049</td>
+  <td class="n">98,195</td>
   <td class="n">34</td>
   <td class="n">$745.00</td>
 </tr>
@@ -933,12 +935,12 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
     <span class="xlinks"><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=3014083142121289&amp;selected_ad_ids=23860416532310791" target="_blank" rel="noopener">Ads Manager</a></span>
   </th>
-  <td class="n">650<span class="bar bar-leads"><span style="width:5.6%"></span></span></td>
-  <td class="n">$0.52</td>
-  <td class="n">$341.24</td>
-  <td class="n">1,781</td>
+  <td class="n">658<span class="bar bar-leads"><span style="width:5.6%"></span></span></td>
+  <td class="n">$0.53</td>
+  <td class="n">$346.13</td>
+  <td class="n">1,802</td>
   <td class="n">36.5%</td>
-  <td class="n">37,885</td>
+  <td class="n">38,491</td>
   <td class="n">18</td>
   <td class="n">$414.00</td>
 </tr>
@@ -1005,14 +1007,14 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <span class="flags"><span class="flag flag-buy">Produced a purchase</span></span>
     <span class="xlinks"><a class="xlink" href="https://www.facebook.com/watch/?v=921090587286970" target="_blank" rel="noopener">Watch video</a><a class="xlink" href="https://adsmanager.facebook.com/adsmanager/manage/ads?act=1246959949464564&amp;selected_ad_ids=120256154047360602" target="_blank" rel="noopener">Ads Manager</a></span>
   </th>
-  <td class="n">8,695<span class="bar bar-leads"><span style="width:74.3%"></span></span></td>
+  <td class="n">8,700<span class="bar bar-leads"><span style="width:74.3%"></span></span></td>
   <td class="n">$1.27</td>
-  <td class="n">$11,029.82</td>
-  <td class="n">26,673</td>
+  <td class="n">$11,038.75</td>
+  <td class="n">26,682</td>
   <td class="n">32.6%</td>
-  <td class="n">562,958</td>
-  <td class="n">217</td>
-  <td class="n">$5,511.00</td>
+  <td class="n">563,441</td>
+  <td class="n">218</td>
+  <td class="n">$5,539.00</td>
 </tr>
 <tr>
   <td class="rk">2</td>
@@ -1181,25 +1183,25 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 </tr>
 <tr>
   <td class="n mono">9/17/2026</td>
-  <td class="n">$6,927.97</td>
-  <td class="n">17,206</td>
+  <td class="n">$6,929.72</td>
+  <td class="n">17,213</td>
   <td class="n">5,601</td>
   <td class="n">$1.24</td>
-  <td class="n">32.6%</td>
+  <td class="n">32.5%</td>
   <td class="n">174</td>
   <td class="n">$4,651.98</td>
   <td class="n hi">0.67x</td>
 </tr>
 <tr>
   <td class="n mono">9/18/2026</td>
-  <td class="n">$1,977.44</td>
-  <td class="n">4,558</td>
-  <td class="n">1,533</td>
-  <td class="n">$1.29</td>
-  <td class="n">33.6%</td>
-  <td class="n">37</td>
-  <td class="n">$1,023.00</td>
-  <td class="n hi">0.52x</td>
+  <td class="n">$2,048.09</td>
+  <td class="n">4,728</td>
+  <td class="n">1,575</td>
+  <td class="n">$1.30</td>
+  <td class="n">33.3%</td>
+  <td class="n">40</td>
+  <td class="n">$1,098.00</td>
+  <td class="n hi">0.54x</td>
 </tr></tbody>
     </table>
   </div>
@@ -1229,15 +1231,15 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     <div class="mcard">
       <h3>The tag filter</h3>
       <p>Leads, purchases and revenue count only people carrying <b>!summit-2026</b>:
-      60661 leads in total, of which <b>57744</b> are
-      attributed to a Fall Summit ad and 2917 arrived organic or
+      60704 leads in total, of which <b>57786</b> are
+      attributed to a Fall Summit ad and 2918 arrived organic or
       direct.</p>
       <p>Spend and link clicks cannot be tag-filtered by anyone, so those are the whole-campaign
       figures for the Fall Summit ad sets.</p>
       <p><b>Meta will report fewer registrations than this page does.</b> Its pixel only sees what it
       can attribute in the browser; Hyros matches server-side. Reading the same window on
-      9/18/2026 07:10 PDT, Meta counted 107,297 against
-      Hyros&rsquo; <b>57,744</b>. Neither is broken: they count different things,
+      9/18/2026 07:21 PDT, Meta counted 107,361 against
+      Hyros&rsquo; <b>57,786</b>. Neither is broken: they count different things,
       and the gap is the reason Hyros is here.</p>
       <p><b>A sale counts only where the buyer touched a Fall Summit ad.</b> If they reached the
       offer through one, the sale counts whatever click closed it, credited to that ad. A tagged
@@ -1261,16 +1263,16 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
     </div>
     <div class="mcard mcard-refresh">
       <h3>Refreshing this page</h3>
-      <p>This copy is rebuilt on request, not on a timer. Someone with the dashboard open presses Refresh, which re-pulls Hyros and rebuilds this page a couple of minutes later.</p><p>The timestamp above is the pull it was built from, in the ad account's time zone.</p>
+      <p>This copy is rebuilt each time the numbers are re-pulled: every 15 minutes while the team's dashboard is running, and whenever someone there presses Refresh. Each pull reaches this page a couple of minutes later.</p><p>The timestamp above is the pull it was built from, in the ad account's time zone.</p>
     </div>
     <div class="mcard">
       <h3>Known variances</h3>
       <ul>
         <li>Hyros reports <b>0 attributed leads</b> on these ad sets
-          against <b>57744</b> carrying the tag. The tag-filtered figure is used everywhere here.</li>
+          against <b>57786</b> carrying the tag. The tag-filtered figure is used everywhere here.</li>
         <li><b>2 campaigns are on this board without having been named in the build:</b> Scaling Canada and Warm Scaling 1. Every Fall Summit campaign these two accounts run is counted whether or not anyone has told this page about it, so a campaign launched this morning is in the totals above from its first dollar.</li>
-        <li><b>118 tagged sales worth $3,791.49 are excluded as organic.</b> They carry the summit tag but no Fall Summit ad touch anywhere, so they are not the ads&rsquo; doing. Hyros counts 1906 tagged sales in this window; this page reports the 1788 the ads earned.</li>
-        <li><b>Ad rows sum to $77,710.64 of the $77,719.27 total.</b> Hyros has not yet
+        <li><b>118 tagged sales worth $3,791.49 are excluded as organic.</b> They carry the summit tag but no Fall Summit ad touch anywhere, so they are not the ads&rsquo; doing. Hyros counts 1909 tagged sales in this window; this page reports the 1791 the ads earned.</li>
+        <li><b>Ad rows sum to $77,783.08 of the $77,791.67 total.</b> Hyros has not yet
           broken every ad set's spend down to individual ads, and the ad level is one full-window pull
           taken seconds after the per-day sweep rather than part of it. The campaign table and the
           headline figures use the ad-set numbers, which are authoritative; the creative ranking below
@@ -1285,8 +1287,8 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 
 <footer>
   <span>School of Traditional Skills and Traditional Skills Academy</span>
-  <span>Data pulled 9/18/2026 07:10 PDT from Hyros</span>
-  <span>Rebuilt on request, not on a timer</span>
+  <span>Data pulled 9/18/2026 07:21 PDT from Hyros</span>
+  <span>Rebuilt each time the numbers are re-pulled</span>
 </footer>
 </div>
 
@@ -1338,8 +1340,9 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
 // Refresh button. Only useful when serve.py is hosting the page, since a static host
 // has nothing to POST to; the published copy is rebuilt by the same press via Actions.
 //
-// The refresh takes roughly twenty seconds: Hyros is paged for leads, sales and a
-// window per day, then the page is rebuilt. Earlier this button just sat there for
+// The refresh takes about a minute (it was twenty seconds at launch, six minutes at
+// 60,000 leads before the pull went parallel): Hyros is paged for leads and sales,
+// Meta for spend, then the page is rebuilt. Earlier this button just sat there for
 // that whole time and a second press got a 409, which read as "it did not work". It
 // now polls for the live stage and a second press simply joins the run in flight.
 (function () {
@@ -1437,12 +1440,55 @@ footer { margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       .then(function () { setTimeout(poll, 350); })
       .catch(function (e) { fail(e.message || String(e)); });
   });
+
+  // serve.py also refreshes by itself on a timer (--every, 15 minutes by default). Watch
+  // for one starting and ride along exactly as if the button had been pressed: the bar
+  // shows the stages and the page reloads onto the new numbers. A run that started and
+  // finished while this tab was asleep is caught by its done_at instead.
+  var note = document.getElementById('rbNote'), loadedAt = Date.now() / 1000;
+  // In the ad account's timezone, like "Pulled" beside it and every other time on the
+  // page. The browser's own zone would put Eastern next to Pacific on one masthead.
+  function clock(t) {
+    return new Date(t * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit',
+      timeZone: 'America/Los_Angeles', timeZoneName: 'short' });
+  }
+  function watch() {
+    // A pressed (or already joined) refresh is being polled; do not start a second poll.
+    if (btn.disabled) { setTimeout(watch, 15000); return; }
+    fetch('/status', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) {
+        if (!s) return;
+        if (s.every_min > 0) {
+          note.textContent = 'Refreshes itself every ' + s.every_min + ' min'
+                           + (s.next_at ? ' · next ' + clock(s.next_at) : '');
+          note.hidden = false;
+        }
+        if (s.running) {
+          btn.disabled = true;
+          err.hidden = true;
+          pct = 0;
+          document.body.classList.add('is-refreshing');
+          stageTo(s.stage);
+          poll();
+          return;
+        }
+        if (s.done_at > loadedAt && !s.error) {
+          location.replace(location.pathname + '?t=' + Date.now());
+          return 'reloading';
+        }
+        if (s.error && s.done_at > loadedAt) { err.textContent = s.error; err.hidden = false; }
+      })
+      .catch(function () {})
+      .then(function (state) { if (state !== 'reloading') setTimeout(watch, 15000); });
+  }
+  setTimeout(watch, 1000);
 })();
 </script>
 
 <script>
 (function () {
-  var MINE = "2026-09-18 07:10 PDT", KEY = 'fs26-stamp-try';
+  var MINE = "2026-09-18 07:21 PDT", KEY = 'fs26-stamp-try';
   function check() {
     if (document.hidden) return;
     fetch('version.json?cb=' + Date.now(), { cache: 'no-store' })
