@@ -281,7 +281,7 @@ def tagged_leads(first_day, today):
     # the pull had no dates at all.
     lo = dt.datetime.fromisoformat(first_day)
     hi = dt.datetime.fromisoformat(today) + dt.timedelta(days=1)
-    wins = windows(dt.datetime(2000, 1, 1), dt.datetime(2099, 12, 31, 23, 59, 59), 3,
+    wins = windows(dt.datetime(2000, 1, 1), hi
                    _RUN, grid_from=lo, grid_to=hi)
     rows = paged_windows("leads", {"pageSize": 250, "tags": TAG}, wins)
     per_ad, per_campaign_name, paid = collections.Counter(), collections.Counter(), 0
