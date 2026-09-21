@@ -276,12 +276,14 @@ def tagged_leads(first_day, today):
     apart from one that belongs to a campaign kept off it deliberately.
     """
     # Pulled in three-hour slices of creation time, side by side, rather than down one
-    # cursor (five minutes at 60,000 leads). The outer slices run from 2000 to 2099, so a
-    # lead created before the summit and tagged since still comes back, as it did when
-    # the pull had no dates at all.
+    # cursor (five minutes at 60,000 leads). The outer bounds run from 2000 to today's
+    # end-of-day so a lead created before the summit and tagged since still comes back.
+    # The upper bound used to be 2099-12-31, but Hyros now rejects a toDate in a future
+    # month (HTTP 400).
     lo = dt.datetime.fromisoformat(first_day)
     hi = dt.datetime.fromisoformat(today) + dt.timedelta(days=1)
-    wins = windows(dt.datetime(2000, 1, 1), hi
+    now_end = hi - dt.timedelta(seconds=1)
+    wins = windows(dt.datetime(2000, 1, 1), now_end, 3,
                    _RUN, grid_from=lo, grid_to=hi)
     rows = paged_windows("leads", {"pageSize": 250, "tags": TAG}, wins)
     per_ad, per_campaign_name, paid = collections.Counter(), collections.Counter(), 0
