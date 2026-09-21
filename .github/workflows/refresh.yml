@@ -222,7 +222,9 @@ jobs:
             echo "nothing changed"
           else
             git commit -m "publish $(date -u +%Y-%m-%dT%H:%MZ)"
+            git stash --include-untracked
             git pull --rebase
+            git stash pop || true
             git push
             echo "published; Pages serves it from main within a minute or so"
           fi
