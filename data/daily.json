@@ -255,27 +255,27 @@
     "date": "2026-09-19",
     "spend": 4954.62,
     "clicks": 14095,
-    "impressions": 551412,
+    "impressions": 551413,
     "leads": 3962,
     "purchases": 116,
     "revenue": 3867.0
   },
   {
     "date": "2026-09-20",
-    "spend": 6087.91,
-    "clicks": 16743,
-    "impressions": 656391,
+    "spend": 6090.08,
+    "clicks": 16748,
+    "impressions": 656711,
     "leads": 4641,
     "purchases": 121,
     "revenue": 3823.5
   },
   {
     "date": "2026-09-21",
-    "spend": 483.11,
-    "clicks": 1217,
-    "impressions": 45481,
-    "leads": 444,
-    "purchases": 9,
-    "revenue": 207.0
+    "spend": 546.75,
+    "clicks": 1387,
+    "impressions": 51892,
+    "leads": 503,
+    "purchases": 11,
+    "revenue": 254.0
   }
 ]
