@@ -46,9 +46,10 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    # No `environment: github-pages` here. Pages serves main directly, so the job never
+    # needed the environment, and on 2026-09-25 its gate wedged a run in "waiting" for
+    # three hours with no reviewers, holding the concurrency group and starving every
+    # later dispatch. Do not add it back.
     steps:
       - uses: actions/checkout@v5
 
