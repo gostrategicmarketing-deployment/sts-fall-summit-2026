@@ -50,6 +50,20 @@ def _export_images():
 IMG_SRC = _export_images()
 M, CAMPS, ADS, LEDGER, DAILY = D["meta"], D["campaigns"], D["ads"], D["purchase_ledger"], D["daily"]
 
+# MOF and BOF campaigns (the VIP All-Access Pass retargeting was the first) sell to people
+# who already registered, so each stage gets its own section and is kept out of every
+# headline figure, the campaign table, the funnel, the daily log and the creative
+# rankings. They are judged on spend, purchases, revenue and ROAS alone. ALL_* keep them
+# for the reconciliation checks, which must still see every lead and sale.
+SEPARATE   = set(M.get("separate_groups") or ["mof", "bof"])
+SIDE_ORDER = [g for g in ("mof", "bof") if g in SEPARATE] + sorted(SEPARATE - {"mof", "bof"})
+ALL_CAMPS, ALL_ADS = CAMPS, ADS
+SIDE_CAMPS = [c for c in CAMPS if c.get("group") in SEPARATE]
+SIDE_SLOTS = {c["slot"] for c in SIDE_CAMPS}
+CAMPS      = [c for c in CAMPS if c["slot"] not in SIDE_SLOTS]
+SIDE_ADS   = [a for a in ADS if a["campaign"] in SIDE_SLOTS]
+ADS        = [a for a in ADS if a["campaign"] not in SIDE_SLOTS]
+
 # daily.json also carries lead-only days from before any Fall Summit ad ran (organic and
 # earlier-campaign registrations that happen to be tagged). They are not days of this
 # campaign, so they stay off the daily log. Cut from the data, not hardcoded, so the log
@@ -60,7 +74,7 @@ DAILY = [d for d in DAILY if d["date"] >= M["first_spend_day"]]
 # order, so this stays the intended reading order while making it impossible to add a
 # campaign upstream and have the page quietly not show it. Hardcoding this is what hid
 # the two Scaling campaigns on 2026-09-09 after pull.py had already found them.
-CAMPAIGN_ORDER = [c["slot"] for c in D["campaigns"]]
+CAMPAIGN_ORDER = [c["slot"] for c in CAMPS]
 
 if REDACT:
     # Buyer identities never leave the private artifact. Every metric, date and amount is untouched;
@@ -124,6 +138,10 @@ _exc_rev = float(M.get("excluded_organic_revenue", 0) or 0)
 _auto = list(M.get("auto_discovered_campaigns") or [])
 _off_n = int(M.get("offboard_tagged_leads", 0) or 0)
 _off_by = dict(M.get("offboard_tagged_lead_campaigns") or {})
+# Tagged leads whose last click was a MOF ad (pull.py hands them back or drops them).
+_mof_moved = int(M.get("mof_reassigned_leads", 0) or 0)
+_mof_drop = int(M.get("mof_dropped_leads", 0) or 0)
+_mof_n = _mof_moved + _mof_drop
 
 # "Just Today" is its own window, pulled separately by pull.py. It is never derived
 # from TOTAL: rendering one block into both decks is exactly what made the two read
@@ -132,17 +150,24 @@ if "today" not in D:
     raise SystemExit("dashboard_data.json has no `today` block. Re-run pull.py, "
                      "which pulls the day window separately from the running total.")
 TODAY = block([D["today"]])
+SIDE_TOTAL = block(SIDE_CAMPS)      # every MOF/BOF campaign together, for the checks
+
+
+def side_today(group):
+    """A group's own day window from pull.py, or None (shown as "no data")."""
+    row = ((D.get("separate") or {}).get(group) or {}).get("today")
+    return block([row]) if row else None
 
 # ---------- reconciliation ----------
 # Ad-level tagged leads must add up to every campaign row and to the paid-attributed
 # total. Fail loudly rather than render a page whose rows disagree with each other.
 _paid = M["tagged_leads_paid"]
-if sum(a["leads"] for a in ADS) != _paid:
-    raise SystemExit(f"ad leads {sum(a['leads'] for a in ADS)} != tagged_leads_paid {_paid}")
-if TOTAL["leads"] != _paid:
-    raise SystemExit(f"campaign leads {TOTAL['leads']} != tagged_leads_paid {_paid}")
-for _c in CAMPS:
-    _s = sum(a["leads"] for a in ADS if a["campaign"] == _c["slot"])
+if sum(a["leads"] for a in ALL_ADS) != _paid:
+    raise SystemExit(f"ad leads {sum(a['leads'] for a in ALL_ADS)} != tagged_leads_paid {_paid}")
+if TOTAL["leads"] + SIDE_TOTAL["leads"] != _paid:
+    raise SystemExit(f"campaign leads {TOTAL['leads'] + SIDE_TOTAL['leads']} != tagged_leads_paid {_paid}")
+for _c in ALL_CAMPS:
+    _s = sum(a["leads"] for a in ALL_ADS if a["campaign"] == _c["slot"])
     if _s != _c["leads"]:
         raise SystemExit(f'{_c["slot"]}: ad leads {_s} != campaign leads {_c["leads"]}')
 # Every ad carrying a !summit-2026 lead must exist in the ads table. An ad dropped from
@@ -160,7 +185,7 @@ if _rawp.exists():
     # leads are checked against that declared number rather than simply forbidden: an ad
     # that goes missing for any OTHER reason still breaks the arithmetic and stops the
     # build, which is the 2026-09-07 guard intact.
-    _ids = {a["id"] for a in ADS}
+    _ids = {a["id"] for a in ALL_ADS}
     _absent = sorted(set(_seen) - _ids)
     _off = sum(_seen[i] for i in _absent)
     if _off != int(M.get("offboard_tagged_leads", 0) or 0):
@@ -168,15 +193,18 @@ if _rawp.exists():
             f"raw lead pull has {_off} leads on ads absent from the dataset but "
             f"meta.offboard_tagged_leads says {M.get('offboard_tagged_leads', 0)}: "
             + ", ".join(f"{i} ({_seen[i]} leads)" for i in _absent))
-    _onboard = sum(_seen[i] for i in _ids & set(_seen))
+    # Leads whose last click was a MOF ad and who have no Fall Summit ad to go back to
+    # are on board by lastSource but deliberately not paid registrations.
+    _onboard = sum(_seen[i] for i in _ids & set(_seen)) - int(M.get("mof_dropped_leads", 0) or 0)
     if _onboard != _paid:
         raise SystemExit(f"raw lead pull has {_onboard} on-board ad-attributed leads "
                          f"but meta.tagged_leads_paid says {_paid}")
 
 _counted = [s for s in LEDGER if s["counted"]]
-if TOTAL["purchases"] != len(_counted):
-    raise SystemExit(f'campaign purchases {TOTAL["purchases"]} != ledger {len(_counted)}')
-if round(TOTAL["revenue"], 2) != round(sum(s["amount"] for s in _counted), 2):
+if TOTAL["purchases"] + SIDE_TOTAL["purchases"] != len(_counted):
+    raise SystemExit(f'campaign purchases {TOTAL["purchases"] + SIDE_TOTAL["purchases"]} '
+                     f'!= ledger {len(_counted)}')
+if round(TOTAL["revenue"] + SIDE_TOTAL["revenue"], 2) != round(sum(s["amount"] for s in _counted), 2):
     raise SystemExit("campaign revenue != ledger revenue")
 
 # Ad rankings: leads first (this is a registration funnel), cheapest lead breaks ties.
@@ -423,6 +451,138 @@ def daily_rows():
   <td class="n hi">{fmt(b["roas"], "x")}</td>
 </tr>""")
     return "\n".join(out)
+
+# ---------- MOF / BOF sections ----------
+# One section per funnel stage, each campaign named "MOF | ..." or "BOF | ..." landing in
+# its stage automatically (pull.py). Four figures only, by request: the audience has
+# already registered, so leads, cost per lead and page conversion mean nothing here.
+STAGE_NAME = {"mof": "MOF", "bof": "BOF"}
+STAGE_BLURB = {
+    "mof": "Retargeting that sells to people who have already registered",
+    "bof": "Bottom-of-funnel campaigns aimed at people already in the funnel",
+}
+
+
+def side_deck(b):
+    if b is None:
+        return "".join(kpi(l, fmt(None, "n")) for l in ("Spend", "Purchases", "Revenue", "ROAS"))
+    return "".join([
+        kpi("Spend",     fmt(b["spend"], "money")),
+        kpi("Purchases", fmt(b["purchases"], "n")),
+        kpi("Revenue",   fmt(b["revenue"], "money")),
+        kpi("ROAS",      fmt(b["roas"], "x"), "break-even at 1.00x"),
+    ])
+
+
+def side_ad_rows(ads, show_campaign):
+    ads = sorted(ads, key=lambda a: (-a["revenue"], -a["purchases"], -a["spend"]))
+    out = []
+    for a in ads:
+        b = block([a])
+        # These ads are often named by SEQID alone, which short_name strips to nothing:
+        # show the hook part of the name instead.
+        label = short_name(a["name"]) or a["name"].split("_", 1)[-1]
+        where = (f'{esc(a["campaign"])}<span class="sep">&middot;</span>' if show_campaign else "")
+        out.append(f"""<tr>
+  <td class="tc">{thumb(a)}</td>
+  <th scope="row">
+    <span class="adname">{esc(label)}</span>
+    <span class="cmeta">{seqid_chip(a["name"])}<span class="acct acct-{a['account'].lower()}">{esc(a["account"])}</span>{where}{esc(a["adset"])}</span>
+  </th>
+  <td class="n">{money(a["spend"])}</td>
+  <td class="n">{num(a["purchases"])}</td>
+  <td class="n">{money(a["revenue"])}</td>
+  <td class="n hi">{fmt(b["roas"], "x")}</td>
+</tr>""")
+    return "\n".join(out)
+
+
+def side_camp_rows(camps):
+    out = []
+    for c in camps:
+        b = block([c])
+        chips = "".join(f'<span class="acct acct-{x.lower()}">{esc(x)}</span>'
+                        for x in c.get("accounts") or [c["account"]])
+        out.append(f"""<tr>
+  <th scope="row"><span class="slot">{esc(c["slot"])}</span>
+    <span class="cname">{esc(c["hyros_name"])}</span><span class="cmeta">{chips}</span></th>
+  <td class="n">{money(c["spend"])}</td>
+  <td class="n">{num(c["purchases"])}</td>
+  <td class="n">{money(c["revenue"])}</td>
+  <td class="n hi">{fmt(b["roas"], "x")}</td>
+</tr>""")
+    return "\n".join(out)
+
+
+def side_section(group):
+    camps = [c for c in SIDE_CAMPS if c.get("group") == group]
+    if not camps:
+        return ""
+    slots = {c["slot"] for c in camps}
+    ads = [a for a in SIDE_ADS if a["campaign"] in slots]
+    stage = STAGE_NAME.get(group, group.upper())
+    title = f"{stage} &middot; {esc(camps[0]['slot'])}" if len(camps) == 1 else f"{stage} campaigns"
+    noun = "campaign has" if len(camps) == 1 else "campaigns have"
+    live = any(c["spend"] > 0 for c in camps)
+    blurb = STAGE_BLURB.get(group, "Campaigns aimed at people already in the funnel")
+    camp_table = "" if len(camps) == 1 else f"""
+  <div class="tw tw-side">
+    <table class="tbl-narrow">
+      <thead><tr>
+        <th scope="col">Campaign</th>
+        <th scope="col" class="n">Spend</th><th scope="col" class="n">Purchases</th>
+        <th scope="col" class="n">Revenue</th><th scope="col" class="n">ROAS</th>
+      </tr></thead>
+      <tbody>{side_camp_rows(camps)}</tbody>
+    </table>
+  </div>"""
+    ad_table = "" if not ads else f"""
+  <div class="tw tw-side">
+    <table class="tbl-narrow">
+      <thead><tr>
+        <th scope="col" class="tc">Preview</th><th scope="col">Creative</th>
+        <th scope="col" class="n">Spend</th><th scope="col" class="n">Purchases</th>
+        <th scope="col" class="n">Revenue</th><th scope="col" class="n">ROAS</th>
+      </tr></thead>
+      <tbody>{side_ad_rows(ads, len(camps) > 1)}</tbody>
+    </table>
+  </div>"""
+    return f"""
+<section>
+  <div class="sec-head">
+    <h2>{title}</h2>
+    <p>{esc(blurb)}, so it is judged on sales alone and is left out of every figure above.
+    A sale counts here when the buyer&rsquo;s last click was one of these ads; registrations
+    are never credited to it.</p>
+  </div>
+  <div class="deck-stack">
+    <div class="deck deck-today">
+      <div class="deck-head">
+        <h2>Just Today</h2>
+        <span class="deck-tag">{esc(usdate(M["window_end"]))}</span>
+        <p class="deck-note">{esc(", ".join(c["hyros_name"] for c in camps))}</p>
+      </div>
+      <div class="grid grid-4">{side_deck(side_today(group))}</div>
+    </div>
+    <div class="deck deck-run">
+      <div class="deck-head">
+        <h2>Running Total</h2>
+        <span class="deck-tag">{'Delivering' if live else 'No delivery yet'}</span>
+        <p class="deck-note">Every day the {stage} {noun} run</p>
+      </div>
+      <div class="grid grid-4">{side_deck(block(camps))}</div>
+    </div>
+  </div>{camp_table}{ad_table}
+</section>
+"""
+
+
+_side_names = [STAGE_NAME.get(g, g.upper()) for g in SIDE_ORDER
+               if any(c.get("group") == g for c in SIDE_CAMPS)]
+_side_clause = (f', {SIDE_TOTAL["purchases"]} of them in the '
+                f'{" and ".join(_side_names)} section{"s" if len(_side_names) > 1 else ""}'
+                if SIDE_CAMPS else '')
+side_html = "".join(side_section(g) for g in SIDE_ORDER)
 
 hero_html = ""
 if HERO_ADS:
@@ -737,7 +897,10 @@ section {{ margin-top:52px; }}
 .deck-tag {{ font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:600; }}
 .deck-note {{ margin:0; font-size:12.5px; }}
 .grid {{ display:grid; gap:1px; grid-template-columns:repeat(5,1fr); }}
+.grid-4 {{ grid-template-columns:repeat(4,1fr); }}
 @media (max-width:900px) {{ .grid {{ grid-template-columns:repeat(2,1fr); }} }}
+.tw-side {{ margin-top:16px; }}
+table.tbl-narrow {{ min-width:560px; }}
 .kpi {{ display:flex; flex-direction:column; gap:3px; padding:14px 16px 15px; }}
 .kpi-lab {{ font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:600; }}
 .kpi-val {{ font-size:clamp(23px,3vw,31px); font-weight:600; letter-spacing:-.02em;
@@ -944,13 +1107,14 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
       <div class="deck-head">
         <h2>Running Total</h2>
         <span class="deck-tag">{esc(usdate(M["first_spend_day"]))} to {esc(usdate(M["window_end"]))}</span>
-        <p class="deck-note">Every day the Fall Summit campaigns have run</p>
+        <p class="deck-note">Every day the Fall Summit campaigns have run{(', ' + ' and '.join(_side_names) + ' reported separately below') if SIDE_CAMPS else ''}</p>
       </div>
       <div class="grid">{deck(TOTAL)}</div>
     </div>
   </div>
 </section>
 
+{side_html}
 <section>
   <div class="sec-head">
     <h2>Registration funnel</h2>
@@ -1133,9 +1297,14 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
           f'{"is" if _exc_n == 1 else "are"} excluded as organic.</b> '
           f'{"It carries" if _exc_n == 1 else "They carry"} the summit tag but no Fall Summit ad touch '
           f'anywhere, so {"it is" if _exc_n == 1 else "they are"} not the ads&rsquo; doing. Hyros counts '
-          f'{TOTAL["purchases"] + _exc_n} tagged sales in this window; this page reports the '
-          f'{TOTAL["purchases"]} the ads earned.</li>' if _exc_n else ''}
-        <li><b>Ad rows sum to {money(M["ad_level_spend_sum"])} of the {money(TOTAL["spend"])} total.</b> Hyros has not yet
+          f'{TOTAL["purchases"] + SIDE_TOTAL["purchases"] + _exc_n} tagged sales in this window; this page reports the '
+          f'{TOTAL["purchases"] + SIDE_TOTAL["purchases"]} the ads earned'
+          f'{_side_clause}.</li>' if _exc_n else ''}
+        {f'<li><b>{_mof_n} registration{"" if _mof_n == 1 else "s"} last clicked a MOF or BOF ad.</b> '
+          f'Those campaigns are never credited with a registration: {_mof_moved} went back to the Fall '
+          f'Summit ad the person first came in on, and {_mof_drop} with no Fall Summit first touch '
+          f'{"is" if _mof_drop == 1 else "are"} left out of the paid registration count.</li>' if _mof_n else ''}
+        <li><b>Ad rows sum to {money(sum(a["spend"] for a in ADS))} of the {money(TOTAL["spend"])} total.</b> Hyros has not yet
           broken every ad set's spend down to individual ads, and the ad level is one full-window pull
           taken seconds after the per-day sweep rather than part of it. The campaign table and the
           headline figures use the ad-set numbers, which are authoritative; the creative ranking below

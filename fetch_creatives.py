@@ -45,11 +45,17 @@ def wanted(data, everything=False):
     ads = data["ads"]
     if everything:
         return [a for a in ads if a["spend"] or a["leads"]]
+    # The MOF and BOF sections list every one of their ads and they are out of the
+    # rankings, exactly as build_dashboard.py renders them.
+    sep = set((data.get("meta") or {}).get("separate_groups") or [])
+    side = {c["slot"] for c in data.get("campaigns", []) if c.get("group") in sep}
+    side_ads = [a for a in ads if a["campaign"] in side]
+    ads = [a for a in ads if a["campaign"] not in side]
     imgs = sorted([a for a in ads if a["type"] == "image"], key=rank)[:TOP_IMAGE]
     vids = sorted([a for a in ads if a["type"] == "video"], key=rank)[:TOP_VIDEO]
     buys = sorted([a for a in ads if a["purchases"]], key=lambda a: -a["revenue"])[:TOP_SELLER]
     seen, out = set(), []
-    for a in imgs + vids + buys:
+    for a in imgs + vids + buys + side_ads:
         if a["id"] not in seen:
             seen.add(a["id"])
             out.append(a)

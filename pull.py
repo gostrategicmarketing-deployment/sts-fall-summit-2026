@@ -71,13 +71,46 @@ SLOTS = [
     # duplicate carries its own budget and can win or lose on its own.
     ("Scaling",        r"Fall (Summit )?2026 \| Scaling\s*(?:\||$)",  "scaling"),
     ("Scaling 2",      r"Fall (Summit )?2026 \| Scaling 2\b(?!.*-\s*Copy)", "scaling"),
+    # Launched 2026-09-28: MOF retargeting that sells the $19 All-Access Pass to people
+    # already registered. Declared only for its row label: the MOF prefix alone is what
+    # sends it to its own section (see SEPARATE).
+    ("VIP All-Access Pass", r"Fall (Summit )?2026 \| VIP All-Access Pass\s*(?:\||$)", "mof"),
 ]
 DECLARED = {slot for slot, _pat, _group in SLOTS}
+SLOT_GROUP = {slot: group for slot, _pat, group in SLOTS}
 # Shown above each subtotal line. A group of one needs no subtotal; the page skips it.
-GROUP_LABEL = {"named": "named campaigns", "scaling": "scaling campaigns"}
+GROUP_LABEL = {"named": "named campaigns", "scaling": "scaling campaigns",
+               "mof": "MOF campaigns", "bof": "BOF campaigns"}
 # The order the blocks read in. A campaign discovered into a group not listed here is
 # appended after them rather than dropped.
-GROUP_ORDER = ["named", "scaling"]
+GROUP_ORDER = ["named", "scaling", "mof", "bof"]
+# Every campaign named "MOF | ..." or "BOF | ..." lands in one of these groups by its
+# name alone, declared or not. Each gets its own section on the page and is kept OUT of
+# the headline totals, the campaign table, the funnel, the daily log and the creative
+# rankings, showing spend, purchases, revenue and ROAS only. Their audience has already
+# registered, so they are never credited with a registration: Hyros moves a lead's
+# lastSource to whatever ad they clicked most recently, so a registrant who clicks a
+# retargeting ad would otherwise be re-filed under it. Those leads go back to their first
+# Fall Summit ad, or out of the paid count if they have none (see main).
+SEPARATE = {"mof", "bof"}
+STAGE_GROUP = {"MOF": "mof", "BOF": "bof"}
+_STAGE = re.compile(r"^\s*(MOF|BOF)\s*\|", re.I)
+
+
+def stage_group(campaign_name):
+    """'mof' / 'bof' for a campaign named with that funnel stage, else None."""
+    m = _STAGE.match(campaign_name or "")
+    return STAGE_GROUP[m.group(1).upper()] if m else None
+
+
+def is_separate(campaign_name):
+    """True for a MOF or BOF campaign, which reports in its own section."""
+    if not campaign_name or EXCLUDE.search(campaign_name) or HIDDEN.search(campaign_name):
+        return False
+    if stage_group(campaign_name):
+        return True
+    slot = slot_for(campaign_name)
+    return bool(slot) and SLOT_GROUP.get(slot) in SEPARATE
 # A different, earlier summit. Its campaigns must never be swept in.
 EXCLUDE = re.compile(r"Preservation", re.I)
 # Deliberately off the sheet. "Scaling 2 | ABO - Copy" was a duplicate that never left
@@ -154,15 +187,20 @@ def discover(rows, lead_campaigns=(), first_day=None, today=None):
         """(slot, is_auto) for a campaign name; (None, False) leaves it off the board."""
         if not camp or EXCLUDE.search(camp) or HIDDEN.search(camp):
             return None, False
-        slot = slot_for(camp)
-        if slot:
+        slot, stage = slot_for(camp), stage_group(camp)
+        # A declared slot is taken unless the funnel stage disagrees with it: a
+        # "MOF | ... | Page 1" must never fold into the TOF Page 1 row.
+        if slot and (not stage or SLOT_GROUP.get(slot) == stage):
             return slot, False
         if not (IS_SUMMIT.search(camp) or camp in lead_campaigns):
             return None, False
         slot = auto_slot(camp)
-        if slot in DECLARED:          # never merge into a row it did not actually match
+        group = stage or auto_group(slot)
+        # Never merge into a row it did not actually match, nor into a same-named row
+        # of another funnel stage (the stage prefix is trimmed off the label).
+        if slot in DECLARED or auto.get(slot, group) != group:
             slot = camp.strip()
-        auto.setdefault(slot, auto_group(slot))
+        auto.setdefault(slot, group)
         return slot, True
 
     src_rows, ad_rows_raw = rows
@@ -289,21 +327,34 @@ def tagged_leads(first_day, today):
     per_ad, per_campaign_name, paid = collections.Counter(), collections.Counter(), 0
     per_day = collections.defaultdict(collections.Counter)
     ad_campaign = {}
+    # Leads whose last ad click was a MOF/BOF (SEPARATE) campaign: (last ad, first ad, day).
+    # main() hands each back to its first Fall Summit ad once discovery has run.
+    mof = []
     for L in rows:
         ls = L.get("lastSource") or {}
         sla = ls.get("sourceLinkAd")
         if sla and sla.get("adSourceId"):
+            day = str(L.get("creationDate") or "")[:10]
             per_ad[sla["adSourceId"]] += 1
             paid += 1
-            per_day[str(L.get("creationDate") or "")[:10]][sla["adSourceId"]] += 1
+            per_day[day][sla["adSourceId"]] += 1
             camp = ((ls.get("category") or {}).get("name")) or ""
             per_campaign_name[camp] += 1
             ad_campaign.setdefault(sla["adSourceId"], camp)
-    return rows, per_ad, per_day, paid, set(per_campaign_name), ad_campaign
+            if is_separate(camp):
+                fs = L.get("firstSource") or {}
+                first = ((fs.get("sourceLinkAd") or {}).get("adSourceId")) or None
+                mof.append((sla["adSourceId"], first, day))
+    return rows, per_ad, per_day, paid, set(per_campaign_name), ad_campaign, mof
 
 
-def tagged_sales(start, end, summit_ads):
-    """Sales in the window whose lead carries the tag, credited to the summit ad touch."""
+def tagged_sales(start, end, summit_ads, separate_slots=frozenset()):
+    """Sales in the window whose lead carries the tag, credited to the summit ad touch.
+
+    Normally the first summit touch takes the credit. A sale that CLOSED on an ad in a
+    separate (MOF) campaign is credited to that ad instead: the buyer was already a
+    registrant, and the retargeting ad is what sold them the pass.
+    """
     # One window per day, side by side: 4s against 29s down a single cursor. The same
     # sales as the date-only start..end query (checked 2026-09-18); the day a sale is
     # filed under still comes from its own timestamp in _norm_date, never its window.
@@ -318,7 +369,11 @@ def tagged_sales(start, end, summit_ads):
             continue
         amount = float((s.get("usdPrice") or s.get("price") or {}).get("price") or 0)
         credit_ad, credit_name = None, ""
-        for which in ("firstSource", "lastSource"):
+        last_aid = (((s.get("lastSource") or {}).get("sourceLinkAd")) or {}).get("adSourceId")
+        order = ("firstSource", "lastSource")
+        if last_aid in summit_ads and summit_ads[last_aid].get("campaign") in separate_slots:
+            order = ("lastSource", "firstSource")
+        for which in order:
             sla = ((s.get(which) or {}).get("sourceLinkAd")) or {}
             aid = sla.get("adSourceId")
             if aid and aid in summit_ads:
@@ -444,7 +499,7 @@ def main():
     print("pulling tagged leads, and the Hyros campaign lists alongside...")
     with cf.ThreadPoolExecutor(max_workers=1) as bg:
         f_disc = bg.submit(discovery_rows)
-        lead_rows, leads_per_ad, leads_per_day, paid_raw, lead_campaigns, ad_campaign = \
+        lead_rows, leads_per_ad, leads_per_day, paid_raw, lead_campaigns, ad_campaign, mof_leads = \
             tagged_leads(first_day, today)
         disc_rows = f_disc.result()
     print(f"  {len(lead_rows)} tagged, {paid_raw} ad-attributed")
@@ -461,8 +516,34 @@ def main():
     if not adsets:
         raise SystemExit("No summit ad sets found. Campaign naming may have changed.")
 
+    # MOF and BOF campaigns are never credited with a registration: their audience
+    # already registered. A lead whose last click was one goes back to the Fall Summit ad
+    # it first came in on; with no such ad on the board it leaves the paid count.
+    slot_group = {sl: g for sl, g, _a in slot_table}
+    sep_slots = {sl for sl, g in slot_group.items() if g in SEPARATE}
+    sep_ads = {k for k, v in ads.items() if v["campaign"] in sep_slots}
+    set_group = {k: slot_group.get(v["slot"]) for k, v in adsets.items()}
+    ad_group = {k: slot_group.get(v["campaign"]) for k, v in ads.items()}
+    side_groups = [g for g in GROUP_ORDER if g in SEPARATE and g in slot_group.values()]
+    mof_moved = mof_dropped = 0
+    for last, first, day in mof_leads:
+        leads_per_ad[last] -= 1
+        leads_per_day[day][last] -= 1
+        if first and first in ads and first not in sep_ads:
+            leads_per_ad[first] += 1
+            leads_per_day[day][first] += 1
+            mof_moved += 1
+        else:
+            mof_dropped += 1
+    leads_per_ad = +leads_per_ad                     # drop the emptied MOF entries
+    for day in list(leads_per_day):
+        leads_per_day[day] = +leads_per_day[day]
+    if mof_leads:
+        print(f"  {len(mof_leads)} tagged leads last clicked a MOF/BOF ad: {mof_moved} returned to "
+              f"their first Fall Summit ad, {mof_dropped} not counted as paid registrations")
+
     print("pulling sales...")
-    ledger, sales_per_ad, rev_per_ad = tagged_sales(first_day, today, ads)
+    ledger, sales_per_ad, rev_per_ad = tagged_sales(first_day, today, ads, sep_slots)
     print(f"  {len(ledger)} tagged sales, ${sum(l['amount'] for l in ledger):,.2f}")
 
     # An ad holding tagged leads that is not on the board is one of two things. If its
@@ -482,7 +563,7 @@ def main():
     for m in kept_off:
         offboard_detail[ad_campaign.get(m) or "unknown campaign"] += leads_per_ad[m]
     offboard_leads = sum(offboard_detail.values())
-    paid = paid_raw - offboard_leads
+    paid = paid_raw - offboard_leads - mof_dropped
     if offboard_leads:
         print(f"  {offboard_leads} tagged leads last touched an off-board campaign and are "
               "not counted: " + "; ".join(f"{k} ({v})" for k, v in offboard_detail.most_common()))
@@ -493,14 +574,21 @@ def main():
     # window also starts at the earliest ad-attributed lead, not at first_spend_day,
     # because a few tagged leads landed before Hyros recorded any spend and would
     # otherwise belong to no day at all.
-    def day_row(day, attr):
-        led = [s for s in ledger if s["date"] == day and s["counted"]]
+    # side=None is the headline (every campaign outside SEPARATE); side="mof" or "bof" is
+    # that section. No ad set belongs to two, so they add back up to the whole.
+    def day_row(day, attr, side=None):
+        def ours(g):
+            return g not in SEPARATE if side is None else g == side
+        led = [s for s in ledger if s["date"] == day and s["counted"]
+               and ours(slot_group.get(s["campaign"]))]
+        mine = [x for k, x in attr.items() if ours(set_group.get(k))]
         return {
             "date": day,
-            "spend": round(sum(x.get("spend", 0.0) for x in attr.values()), 2),
-            "clicks": sum(x.get("clicks", 0) for x in attr.values()),
-            "impressions": sum(x.get("impressions", 0) for x in attr.values()),
-            "leads": sum(n for aid, n in leads_per_day.get(day, {}).items() if aid in ads),
+            "spend": round(sum(x.get("spend", 0.0) for x in mine), 2),
+            "clicks": sum(x.get("clicks", 0) for x in mine),
+            "impressions": sum(x.get("impressions", 0) for x in mine),
+            "leads": sum(n for aid, n in leads_per_day.get(day, {}).items()
+                         if aid in ads and ours(ad_group.get(aid))),
             "purchases": len(led),
             "revenue": round(sum(s["amount"] for s in led), 2),
         }
@@ -543,12 +631,21 @@ def main():
             fut = {ex.submit(attribution, ids_all, "facebook_adset", d, d): d for d in days}
             for f in cf.as_completed(fut):
                 per_day_attr[fut[f]] = f.result()
+    daily_sep = {g: [] for g in side_groups}
     for day in days:
         row = day_row(day, per_day_attr[day])
         if row["spend"] or row["clicks"] or row["leads"] or row["purchases"]:
             daily.append(row)
+        for g in side_groups:
+            srow = day_row(day, per_day_attr[day], side=g)
+            if srow["spend"] or srow["clicks"] or srow["purchases"]:
+                daily_sep[g].append(srow)
     today_row = next((r for r in daily if r["date"] == today),
                      day_row(today, per_day_attr.get(today, {})))
+    separate = {g: {"today": next((r for r in daily_sep[g] if r["date"] == today),
+                                  day_row(today, per_day_attr.get(today, {}), side=g)),
+                    "daily": daily_sep[g]}
+                for g in side_groups}
 
     # Ad level stays one full-window pull: per-day would be 12 batched calls per day.
     # Taken here, straight after the sweep, so the gap against the campaign rows is
@@ -669,7 +766,8 @@ def main():
 
     # The day rows should add back up to the running total. Attribution restates a
     # little as Hyros settles, so this is recorded, not enforced.
-    daily_spend_sum = round(sum(d["spend"] for d in daily), 2)
+    daily_spend_sum = round(sum(d["spend"] for d in daily)
+                            + sum(d["spend"] for rows in daily_sep.values() for d in rows), 2)
 
     meta = dict(prev.get("meta") or {})
     meta.update({
@@ -702,6 +800,12 @@ def main():
         "auto_discovered_campaigns": added,
         "offboard_tagged_leads": offboard_leads,
         "offboard_tagged_lead_campaigns": dict(offboard_detail),
+        # Groups shown in their own section, outside the headline figures.
+        "separate_groups": sorted(SEPARATE),
+        # Tagged leads whose last click was a MOF ad: handed back to their first Fall
+        # Summit ad, or (dropped) left out of the paid count because they have none.
+        "mof_reassigned_leads": mof_moved,
+        "mof_dropped_leads": mof_dropped,
         "hyros_report_leads_on_summit_adsets": sum(x.get("leads", 0) for x in as_run.values()),
         "ad_level_spend_sum": round(sum(a["spend"] for a in ad_rows), 2),
         # Renamed from uncredited_*: those were ADDED to the headline, these are removed
@@ -721,7 +825,10 @@ def main():
 
     out = {"meta": meta, "campaigns": camp_rows, "ads": ad_rows,
            "purchase_ledger": sorted(ledger, key=lambda s: (s["date"], s["amount"]), reverse=True),
-           "today": today_row, "daily": daily}
+           "today": today_row, "daily": daily,
+           # Each SEPARATE group's own day window and day rows, keyed by group ("mof",
+           # "bof"). Campaign rows for them stay in `campaigns`, marked by their group.
+           "separate": separate}
     DATA.mkdir(exist_ok=True)
     p.write_text(json.dumps(out, indent=2))
     print(f"\nwrote {p.relative_to(HERE)}")
