@@ -157,15 +157,23 @@ def auto_group(slot):
     return "scaling" if re.search(r"scal", slot, re.I) else "named"
 
 
-def discovery_rows():
+def discovery_rows(page_size=None):
     """Every Facebook ad set (a Hyros source) and ad Hyros knows, fetched side by side.
 
     Its own function so main can run it while the tagged leads are still coming in: it
     needs nothing from them. Only discover(), which sorts these rows, does.
+
+    The page size is run-unique because Hyros answers a repeated query from a ~4-minute
+    cache, and these two lists are otherwise the same query every refresh. On 2026-09-29
+    an ad registered at 12:41 PDT took its first tagged lead at once, but /ads kept
+    serving the list from before it existed, so the 12:42 and 12:44 refreshes both
+    stopped on "ads hold tagged leads but were not discovered". pageSize is a real
+    parameter, so changing it is a new query; an unknown extra parameter is ignored.
     """
+    page_size = page_size or 200 + _RUN % 51
     with cf.ThreadPoolExecutor(max_workers=2) as ex:
-        f_src = ex.submit(paged, "sources", {"pageSize": 250, "integrationType": "FACEBOOK"})
-        f_ads = ex.submit(paged, "ads", {"pageSize": 250, "integrationType": "FACEBOOK"})
+        f_src = ex.submit(paged, "sources", {"pageSize": page_size, "integrationType": "FACEBOOK"})
+        f_ads = ex.submit(paged, "ads", {"pageSize": page_size, "integrationType": "FACEBOOK"})
         return f_src.result(), f_ads.result()
 
 
@@ -506,6 +514,16 @@ def main():
 
     print("discovering summit campaigns, ad sets and ads...")
     adsets, ads, slot_table, offboard = discover(disc_rows, lead_campaigns, first_day, today)
+    # A lead can name an ad the ad list does not carry yet: Hyros files the click as it
+    # happens, but a brand-new ad can take minutes to reach /ads. Asked once more as a
+    # different query before the check further down treats it as a discovery failure.
+    lagging = [m for m in set(leads_per_ad) - set(ads)
+               if not (EXCLUDE.search(ad_campaign.get(m, "")) or HIDDEN.search(ad_campaign.get(m, "")))]
+    if lagging:
+        print(f"  {len(lagging)} ad(s) holding tagged leads not in the ad list yet "
+              f"({', '.join(sorted(lagging))}); asking Hyros again")
+        disc_rows = discovery_rows(page_size=199 - _RUN % 50)
+        adsets, ads, slot_table, offboard = discover(disc_rows, lead_campaigns, first_day, today)
     added = [sl for sl, _g, is_auto in slot_table if is_auto]
     if added:
         print("  on the board automatically, not named in SLOTS: " + ", ".join(added))
