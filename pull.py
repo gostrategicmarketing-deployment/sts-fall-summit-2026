@@ -225,6 +225,7 @@ def discover(rows, lead_campaigns=(), first_day=None, today=None):
         adsets[src["adSourceId"]] = {
             "adSetId": src["adSourceId"], "adSetName": s.get("name") or "",
             "adAccountId": src.get("adAccountId", ""), "campaign": camp, "slot": slot,
+            "tag": s.get("tag") or "",
         }
 
     # Hyros lists an ad set as a source only once it has carried traffic, so a campaign
@@ -356,12 +357,78 @@ def tagged_leads(first_day, today):
     return rows, per_ad, per_day, paid, set(per_campaign_name), ad_campaign, mof
 
 
-def tagged_sales(start, end, summit_ads, separate_slots=frozenset()):
+def _sale_moment(v):
+    """A Hyros timestamp in either of its two formats, as an aware datetime (or None)."""
+    for f in ("%a %b %d %H:%M:%S UTC %Y", "%Y-%m-%dT%H:%M:%S%z"):
+        try:
+            t = dt.datetime.strptime(str(v or ""), f)
+        except ValueError:
+            continue
+        return t if t.tzinfo else t.replace(tzinfo=dt.timezone.utc)
+    return None
+
+
+def last_paid_click(rows, sep_ads, sep_tags):
+    """sale id -> (ad id, ad name) of the last PAID ad click before the sale, for sales
+    that closed on an organic touch after a buyer clicked a separate (MOF) ad.
+
+    A sale's lastSource is its literal last touch, organic included. Hyros' own last-click
+    model skips organic and credits the last ad clicked, which is what the Hyros extension
+    and Ads Manager column show. The gap is real traffic: on 2026-09-29 five VIP pass sales
+    clicked the VIP ad, came back through google_organic / facebook_organic (often the
+    in-app browser a minute later) and bought, so lastSource credited them to the TOF ad
+    they first registered on. Only buyers carrying a MOF ad set's tag are looked up, 50
+    leads to a /leads/journey call, so this costs a call or two a refresh.
+    """
+    cands = {}
+    for s in rows:
+        if ((s.get("lastSource") or {}).get("sourceLinkAd")):
+            continue
+        lead = s.get("lead") or {}
+        if lead.get("id") and sep_tags & set(lead.get("tags") or []):
+            cands.setdefault(lead["id"], []).append(s)
+    if not cands:
+        return {}
+    ids = sorted(cands)
+    chunks = [ids[i:i + 50] for i in range(0, len(ids), 50)]
+
+    def one(chunk):
+        return get("leads/journey", {"ids": ",".join(chunk), "includeEvents": "true"})
+
+    out = {}
+    with cf.ThreadPoolExecutor(max_workers=4) as ex:
+        results = list(ex.map(one, chunks))
+    for code, d in results:
+        if code != 200 or not isinstance(d, dict):
+            raise SystemExit(f"leads/journey failed: HTTP {code} {str(d)[:200]}")
+        for rec in d.get("result") or []:
+            lid = (rec.get("lead") or {}).get("id")
+            clicks = []
+            for ev in rec.get("journey") or []:
+                ad = ev.get("ad") or {}
+                if ev.get("type") == "sl" and ad.get("adSourceId"):
+                    t = _sale_moment(ev.get("date"))
+                    if t:
+                        clicks.append((t, ad["adSourceId"], ad.get("name") or ""))
+            clicks.sort()
+            for s in cands.get(lid, []):
+                at = _sale_moment(s.get("creationDate"))
+                before = [c for c in clicks if at and c[0] <= at]
+                if before and before[-1][1] in sep_ads:
+                    out[s.get("id")] = (before[-1][1], before[-1][2])
+    return out
+
+
+def tagged_sales(start, end, summit_ads, separate_slots=frozenset(), separate_tags=frozenset()):
     """Sales in the window whose lead carries the tag, credited to the summit ad touch.
 
-    Normally the first summit touch takes the credit. A sale that CLOSED on an ad in a
-    separate (MOF) campaign is credited to that ad instead: the buyer was already a
-    registrant, and the retargeting ad is what sold them the pass.
+    Normally the first summit touch takes the credit. A sale whose last PAID click was an
+    ad in a separate (MOF) campaign is credited to that ad instead: the buyer was already
+    a registrant, and the retargeting ad is what sold them the pass. Such a sale counts
+    even when the lead lacks the summit tag: the tag rule exists to keep organic buyers
+    of the TOF offer out, and a buyer who closed on a paid VIP click is not organic. On
+    2026-09-29 six of 24 VIP-closed sales had no tag (registered under another record or
+    reached through the registrant audience) and the VIP section read 18 against Hyros' 29.
     """
     # One window per day, side by side: 4s against 29s down a single cursor. The same
     # sales as the date-only start..end query (checked 2026-09-18); the day a sale is
@@ -369,19 +436,25 @@ def tagged_sales(start, end, summit_ads, separate_slots=frozenset()):
     lo = dt.datetime.fromisoformat(start)
     hi = dt.datetime.fromisoformat(end).replace(hour=23, minute=59, second=59)
     rows = paged_windows("sales", {"pageSize": 250}, windows(lo, hi, 24, _RUN))
+    sep_ads = {k for k, v in summit_ads.items() if v.get("campaign") in separate_slots}
+    via_journey = last_paid_click(rows, sep_ads, set(separate_tags) - {""})
     ledger, per_ad = [], collections.Counter()
     rev_per_ad = collections.Counter()
     for s in rows:
         lead = s.get("lead") or {}
-        if TAG not in (lead.get("tags") or []):
+        last_sla = ((s.get("lastSource") or {}).get("sourceLinkAd")) or {}
+        mof_close = via_journey.get(s.get("id"))
+        if not mof_close and last_sla.get("adSourceId") in sep_ads:
+            mof_close = (last_sla["adSourceId"], last_sla.get("name") or "")
+        # A subscription rebill is not a sale the retargeting ad closed, so it gets no
+        # exemption from the tag rule: Hyros itself books $0 revenue to the ad for one.
+        if TAG not in (lead.get("tags") or []) and not (mof_close and not s.get("recurring")):
             continue
         amount = float((s.get("usdPrice") or s.get("price") or {}).get("price") or 0)
         credit_ad, credit_name = None, ""
-        last_aid = (((s.get("lastSource") or {}).get("sourceLinkAd")) or {}).get("adSourceId")
-        order = ("firstSource", "lastSource")
-        if last_aid in summit_ads and summit_ads[last_aid].get("campaign") in separate_slots:
-            order = ("lastSource", "firstSource")
-        for which in order:
+        if mof_close:
+            credit_ad, credit_name = mof_close
+        for which in (() if mof_close else ("firstSource", "lastSource")):
             sla = ((s.get(which) or {}).get("sourceLinkAd")) or {}
             aid = sla.get("adSourceId")
             if aid and aid in summit_ads:
@@ -392,7 +465,10 @@ def tagged_sales(start, end, summit_ads, separate_slots=frozenset()):
             rev_per_ad[credit_ad] += amount
         name = f"{lead.get('firstName','')} {lead.get('lastName','')}".strip() or "unknown"
         last_name = ((s.get("lastSource") or {}).get("name")) or ""
-        if credit_ad and last_name and "sourceLinkAd" not in str(s.get("lastSource") or {}):
+        if s.get("id") in via_journey:
+            why = (f"Last ad clicked was {credit_name}, then back through {last_name} to buy; "
+                   "the ad gets the credit, as in Hyros' last-click model.")
+        elif credit_ad and last_name and "sourceLinkAd" not in str(s.get("lastSource") or {}):
             why = f"Reached the offer through {credit_name}, which gets the credit."
         elif credit_ad:
             why = f"Closed on {credit_name}, which gets the credit."
@@ -405,6 +481,7 @@ def tagged_sales(start, end, summit_ads, separate_slots=frozenset()):
             "classification": why, "campaign": summit_ads.get(credit_ad, {}).get("campaign", "n/a"),
             "ad": credit_name or "n/a",
             "refunded": bool(s.get("refundDate")), "recurring": bool(s.get("recurring")),
+            "tagged": TAG in (lead.get("tags") or []), "mof_via_journey": s.get("id") in via_journey,
         })
     return ledger, per_ad, rev_per_ad
 
@@ -561,8 +638,11 @@ def main():
               f"their first Fall Summit ad, {mof_dropped} not counted as paid registrations")
 
     print("pulling sales...")
-    ledger, sales_per_ad, rev_per_ad = tagged_sales(first_day, today, ads, sep_slots)
-    print(f"  {len(ledger)} tagged sales, ${sum(l['amount'] for l in ledger):,.2f}")
+    sep_tags = {v.get("tag", "") for v in adsets.values() if v["slot"] in sep_slots}
+    ledger, sales_per_ad, rev_per_ad = tagged_sales(first_day, today, ads, sep_slots, sep_tags)
+    print(f"  {len(ledger)} sales, ${sum(l['amount'] for l in ledger):,.2f} "
+          f"({sum(1 for l in ledger if not l['tagged'])} untagged, closed on a MOF/BOF ad; "
+          f"{sum(1 for l in ledger if l['mof_via_journey'])} credited to a MOF/BOF ad via the click journey)")
 
     # An ad holding tagged leads that is not on the board is one of two things. If its
     # campaign is one EXCLUDE or HIDDEN keeps off deliberately, its leads come out of the
@@ -829,6 +909,12 @@ def main():
         # Renamed from uncredited_*: those were ADDED to the headline, these are removed
         # from it. A stale reader keying on the old name would silently restore them.
         "excluded_organic_purchases": len(excluded),
+        # Sales a MOF/BOF ad closed on a lead without the summit tag: counted in that
+        # section, and not part of Hyros' tagged-sales count.
+        "mof_untagged_sales": sum(1 for s in ledger if s["counted"] and not s["tagged"]),
+        "mof_untagged_revenue": round(sum(s["amount"] for s in ledger
+                                          if s["counted"] and not s["tagged"]), 2),
+        "mof_journey_sales": sum(1 for s in ledger if s["mof_via_journey"]),
         "excluded_organic_revenue": round(sum(s["amount"] for s in excluded), 2),
         "ad_level_leads_are_tag_filtered": True,
         "sales_credit_rule": ("A sale counts only where the buyer has a Fall Summit ad touch, "

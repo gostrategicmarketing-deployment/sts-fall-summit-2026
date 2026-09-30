@@ -133,6 +133,8 @@ TOTAL = block(CAMPS)
 # Excluded, which is why the headline can be lower than the tag's own sale count.
 _exc_n = int(M.get("excluded_organic_purchases", 0) or 0)
 _exc_rev = float(M.get("excluded_organic_revenue", 0) or 0)
+_untag_n = int(M.get("mof_untagged_sales", 0) or 0)
+_untag_rev = float(M.get("mof_untagged_revenue", 0) or 0)
 # Campaigns pull.py put on the board without anybody declaring them, and tagged leads
 # whose last ad touch was a campaign this board deliberately does not count.
 _auto = list(M.get("auto_discovered_campaigns") or [])
@@ -552,7 +554,7 @@ def side_section(group):
   <div class="sec-head">
     <h2>{title}</h2>
     <p>{esc(blurb)}, so it is judged on sales alone and is left out of every figure above.
-    A sale counts here when the buyer&rsquo;s last click was one of these ads; registrations
+    A sale counts here when the buyer&rsquo;s last ad click was one of these ads (organic return visits are skipped, as in Hyros last-click); registrations
     are never credited to it.</p>
   </div>
   <div class="deck-stack">
@@ -1297,9 +1299,14 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
           f'{"is" if _exc_n == 1 else "are"} excluded as organic.</b> '
           f'{"It carries" if _exc_n == 1 else "They carry"} the summit tag but no Fall Summit ad touch '
           f'anywhere, so {"it is" if _exc_n == 1 else "they are"} not the ads&rsquo; doing. Hyros counts '
-          f'{TOTAL["purchases"] + SIDE_TOTAL["purchases"] + _exc_n} tagged sales in this window; this page reports the '
+          f'{TOTAL["purchases"] + SIDE_TOTAL["purchases"] + _exc_n - _untag_n} tagged sales in this window; this page reports the '
           f'{TOTAL["purchases"] + SIDE_TOTAL["purchases"]} the ads earned'
           f'{_side_clause}.</li>' if _exc_n else ''}
+        {f'<li><b>{_untag_n} sale{"" if _untag_n == 1 else "s"} worth {money(_untag_rev)} closed on a MOF or BOF ad '
+          f'from a buyer without the summit tag.</b> {"It is" if _untag_n == 1 else "They are"} counted in that '
+          f'section: a paid retargeting click closed {"it" if _untag_n == 1 else "them"}, so {"it is" if _untag_n == 1 else "they are"} '
+          f'not organic. MOF and BOF sales follow Hyros&rsquo; last-click model, which skips organic '
+          f'touches, so a buyer who clicked the ad and came back through Google to pay is still the ad&rsquo;s.</li>' if _untag_n else ''}
         {f'<li><b>{_mof_n} registration{"" if _mof_n == 1 else "s"} last clicked a MOF or BOF ad.</b> '
           f'Those campaigns are never credited with a registration: {_mof_moved} went back to the Fall '
           f'Summit ad the person first came in on, and {_mof_drop} with no Fall Summit first touch '
