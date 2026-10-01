@@ -361,20 +361,20 @@
   },
   {
     "date": "2026-09-30",
-    "spend": 7125.48,
-    "clicks": 14905,
-    "impressions": 682779,
+    "spend": 7126.05,
+    "clicks": 14907,
+    "impressions": 682856,
     "leads": 4227,
     "purchases": 116,
     "revenue": 3339.0
   },
   {
     "date": "2026-10-01",
-    "spend": 3260.06,
-    "clicks": 6582,
-    "impressions": 318698,
-    "leads": 2025,
-    "purchases": 54,
-    "revenue": 1567.0
+    "spend": 3301.18,
+    "clicks": 6667,
+    "impressions": 323969,
+    "leads": 2062,
+    "purchases": 57,
+    "revenue": 1633.0
   }
 ]
