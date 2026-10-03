@@ -446,9 +446,14 @@ def tagged_sales(start, end, summit_ads, separate_slots=frozenset(), separate_ta
         mof_close = via_journey.get(s.get("id"))
         if not mof_close and last_sla.get("adSourceId") in sep_ads:
             mof_close = (last_sla["adSourceId"], last_sla.get("name") or "")
-        # A subscription rebill is not a sale the retargeting ad closed, so it gets no
-        # exemption from the tag rule: Hyros itself books $0 revenue to the ad for one.
-        if TAG not in (lead.get("tags") or []) and not (mof_close and not s.get("recurring")):
+        # A subscription rebill is not a sale the retargeting ad closed: Hyros itself books
+        # $0 revenue to the ad for one. So it never takes the MOF route, tagged or not; a
+        # tagged rebill falls through to the normal first-touch credit below. On 2026-10-01
+        # a tagged $195 rebill whose last click was a VIP ad put the VIP section $195 above
+        # Hyros' last-click revenue.
+        if s.get("recurring"):
+            mof_close = None
+        if TAG not in (lead.get("tags") or []) and not mof_close:
             continue
         amount = float((s.get("usdPrice") or s.get("price") or {}).get("price") or 0)
         credit_ad, credit_name = None, ""
@@ -465,7 +470,7 @@ def tagged_sales(start, end, summit_ads, separate_slots=frozenset(), separate_ta
             rev_per_ad[credit_ad] += amount
         name = f"{lead.get('firstName','')} {lead.get('lastName','')}".strip() or "unknown"
         last_name = ((s.get("lastSource") or {}).get("name")) or ""
-        if s.get("id") in via_journey:
+        if mof_close and s.get("id") in via_journey:
             why = (f"Last ad clicked was {credit_name}, then back through {last_name} to buy; "
                    "the ad gets the credit, as in Hyros' last-click model.")
         elif credit_ad and last_name and "sourceLinkAd" not in str(s.get("lastSource") or {}):
@@ -481,7 +486,7 @@ def tagged_sales(start, end, summit_ads, separate_slots=frozenset(), separate_ta
             "classification": why, "campaign": summit_ads.get(credit_ad, {}).get("campaign", "n/a"),
             "ad": credit_name or "n/a",
             "refunded": bool(s.get("refundDate")), "recurring": bool(s.get("recurring")),
-            "tagged": TAG in (lead.get("tags") or []), "mof_via_journey": s.get("id") in via_journey,
+            "tagged": TAG in (lead.get("tags") or []), "mof_via_journey": bool(mof_close) and s.get("id") in via_journey,
         })
     return ledger, per_ad, rev_per_ad
 
