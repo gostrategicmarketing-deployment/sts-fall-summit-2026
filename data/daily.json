@@ -372,17 +372,17 @@
     "date": "2026-10-01",
     "spend": 7627.01,
     "clicks": 15539,
-    "impressions": 798257,
+    "impressions": 798259,
     "leads": 4408,
     "purchases": 127,
     "revenue": 4096.0
   },
   {
     "date": "2026-10-02",
-    "spend": 8386.48,
-    "clicks": 15766,
-    "impressions": 804025,
-    "leads": 4534,
+    "spend": 8438.13,
+    "clicks": 15855,
+    "impressions": 808142,
+    "leads": 4560,
     "purchases": 166,
     "revenue": 4886.0
   }
