@@ -175,7 +175,7 @@
     "spend": 8302.83,
     "clicks": 22161,
     "impressions": 713248,
-    "leads": 6422,
+    "leads": 6421,
     "purchases": 213,
     "revenue": 4741.0
   },
@@ -355,7 +355,7 @@
     "spend": 8080.94,
     "clicks": 20580,
     "impressions": 955580,
-    "leads": 5251,
+    "leads": 5250,
     "purchases": 126,
     "revenue": 3584.0
   },
@@ -379,19 +379,19 @@
   },
   {
     "date": "2026-10-02",
-    "spend": 8602.15,
-    "clicks": 16221,
-    "impressions": 821923,
+    "spend": 8605.62,
+    "clicks": 16228,
+    "impressions": 822321,
     "leads": 4606,
     "purchases": 168,
     "revenue": 4933.0
   },
   {
     "date": "2026-10-03",
-    "spend": 474.33,
-    "clicks": 999,
-    "impressions": 40809,
-    "leads": 331,
+    "spend": 535.1,
+    "clicks": 1120,
+    "impressions": 45704,
+    "leads": 374,
     "purchases": 8,
     "revenue": 373.0
   }
