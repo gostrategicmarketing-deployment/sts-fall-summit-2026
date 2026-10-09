@@ -433,19 +433,19 @@
   },
   {
     "date": "2026-10-08",
-    "spend": 8420.52,
-    "clicks": 15403,
-    "impressions": 779919,
-    "leads": 4096,
+    "spend": 8421.12,
+    "clicks": 15404,
+    "impressions": 779970,
+    "leads": 4095,
     "purchases": 213,
     "revenue": 4934.0
   },
   {
     "date": "2026-10-09",
-    "spend": 8202.83,
-    "clicks": 13426,
-    "impressions": 653836,
-    "leads": 3648,
+    "spend": 8389.0,
+    "clicks": 13661,
+    "impressions": 669817,
+    "leads": 3721,
     "purchases": 174,
     "revenue": 4540.0
   }
