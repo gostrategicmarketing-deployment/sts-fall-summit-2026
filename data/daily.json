@@ -444,27 +444,27 @@
     "date": "2026-10-09",
     "spend": 14450.12,
     "clicks": 24470,
-    "impressions": 1167871,
+    "impressions": 1167872,
     "leads": 4644,
     "purchases": 213,
     "revenue": 5363.5
   },
   {
     "date": "2026-10-10",
-    "spend": 11735.55,
-    "clicks": 20587,
-    "impressions": 915474,
+    "spend": 11736.96,
+    "clicks": 20589,
+    "impressions": 915664,
     "leads": 5529,
     "purchases": 280,
     "revenue": 6684.0
   },
   {
     "date": "2026-10-11",
-    "spend": 4311.94,
-    "clicks": 7249,
-    "impressions": 344554,
-    "leads": 1800,
-    "purchases": 48,
-    "revenue": 1066.0
+    "spend": 4539.63,
+    "clicks": 7586,
+    "impressions": 360816,
+    "leads": 1917,
+    "purchases": 54,
+    "revenue": 1207.0
   }
 ]
