@@ -121,7 +121,7 @@
     "spend": 0,
     "clicks": 0,
     "impressions": 0,
-    "leads": 5,
+    "leads": 6,
     "purchases": 0,
     "revenue": 0
   },
@@ -166,7 +166,7 @@
     "spend": 2931.79,
     "clicks": 6566,
     "impressions": 245404,
-    "leads": 2028,
+    "leads": 2027,
     "purchases": 82,
     "revenue": 1711.0
   },
@@ -175,7 +175,7 @@
     "spend": 8302.83,
     "clicks": 22161,
     "impressions": 713248,
-    "leads": 6406,
+    "leads": 6402,
     "purchases": 213,
     "revenue": 4741.0
   },
@@ -184,7 +184,7 @@
     "spend": 9402.12,
     "clicks": 23781,
     "impressions": 808532,
-    "leads": 7087,
+    "leads": 7086,
     "purchases": 190,
     "revenue": 4682.0
   },
@@ -202,7 +202,7 @@
     "spend": 6877.06,
     "clicks": 19478,
     "impressions": 713512,
-    "leads": 5539,
+    "leads": 5537,
     "purchases": 159,
     "revenue": 3904.0
   },
@@ -274,7 +274,7 @@
     "spend": 6147.5,
     "clicks": 16875,
     "impressions": 664785,
-    "leads": 4627,
+    "leads": 4626,
     "purchases": 121,
     "revenue": 3823.5
   },
@@ -283,7 +283,7 @@
     "spend": 6159.87,
     "clicks": 16216,
     "impressions": 671107,
-    "leads": 4432,
+    "leads": 4431,
     "purchases": 115,
     "revenue": 2707.0
   },
@@ -337,7 +337,7 @@
     "spend": 7706.68,
     "clicks": 19222,
     "impressions": 630876,
-    "leads": 5403,
+    "leads": 5402,
     "purchases": 130,
     "revenue": 5113.5
   },
@@ -427,7 +427,7 @@
     "spend": 7090.19,
     "clicks": 12337,
     "impressions": 593758,
-    "leads": 3663,
+    "leads": 3662,
     "purchases": 158,
     "revenue": 3615.99
   },
@@ -453,16 +453,16 @@
     "date": "2026-10-10",
     "spend": 11752.95,
     "clicks": 20660,
-    "impressions": 919444,
+    "impressions": 919446,
     "leads": 5515,
     "purchases": 281,
     "revenue": 6703.0
   },
   {
     "date": "2026-10-11",
-    "spend": 11855.91,
+    "spend": 11856.24,
     "clicks": 20577,
-    "impressions": 945091,
+    "impressions": 945126,
     "leads": 5528,
     "purchases": 360,
     "revenue": 7975.0
@@ -473,7 +473,7 @@
     "clicks": 0,
     "impressions": 0,
     "leads": 19,
-    "purchases": 106,
-    "revenue": 5207.5
+    "purchases": 118,
+    "revenue": 7859.5
   }
 ]
