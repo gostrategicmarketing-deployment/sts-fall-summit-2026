@@ -586,6 +586,20 @@ _side_clause = (f', {SIDE_TOTAL["purchases"]} of them in the '
                 if SIDE_CAMPS else '')
 side_html = "".join(side_section(g) for g in SIDE_ORDER)
 
+# TOF + MOF (+ BOF) together, so total ad spend and total sales read in one place.
+# Registrations stay TOF-only: the retargeting campaigns are never credited with leads.
+COMBINED = block(CAMPS + SIDE_CAMPS)
+combined_html = f"""
+<section>
+  <div class="sec-head">
+    <h2>All campaigns combined</h2>
+    <p>Every Fall Summit campaign together ({" + ".join(["TOF"] + _side_names)}), running total, both accounts.
+    Spend, purchases and revenue include the retargeting campaigns; registrations stay TOF-only.</p>
+  </div>
+  <div class="deck deck-run"><div class="grid grid-4">{kpi("Total spend", fmt(COMBINED["spend"], "money"), "all campaigns")}{kpi("Purchases", fmt(COMBINED["purchases"], "n"))}{kpi("Revenue", fmt(COMBINED["revenue"], "money"))}{kpi("Cost per purchase", fmt(COMBINED["cpp"], "money"))}{kpi("ROAS", fmt(COMBINED["roas"], "x"), "break-even at 1.00x")}</div></div>
+</section>
+""" if SIDE_CAMPS else ""
+
 hero_html = ""
 if HERO_ADS:
     n, total = len(HERO_ADS), len(SELLERS)
@@ -1116,7 +1130,7 @@ footer {{ margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
   </div>
 </section>
 
-{side_html}
+{combined_html}{side_html}
 <section>
   <div class="sec-head">
     <h2>Registration funnel</h2>
