@@ -166,7 +166,7 @@
     "spend": 2931.79,
     "clicks": 6566,
     "impressions": 245404,
-    "leads": 2022,
+    "leads": 2021,
     "purchases": 82,
     "revenue": 1711.0
   },
@@ -229,7 +229,7 @@
     "spend": 7690.37,
     "clicks": 19981,
     "impressions": 762623,
-    "leads": 5538,
+    "leads": 5537,
     "purchases": 183,
     "revenue": 5511.0
   },
@@ -500,7 +500,7 @@
     "clicks": 0,
     "impressions": 0,
     "leads": 0,
-    "purchases": 9,
-    "revenue": 1140.0
+    "purchases": 13,
+    "revenue": 1598.0
   }
 ]
