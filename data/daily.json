@@ -502,5 +502,14 @@
     "leads": 0,
     "purchases": 104,
     "revenue": 15339.48
+  },
+  {
+    "date": "2026-10-16",
+    "spend": 0,
+    "clicks": 0,
+    "impressions": 0,
+    "leads": 0,
+    "purchases": 1,
+    "revenue": 19.5
   }
 ]
