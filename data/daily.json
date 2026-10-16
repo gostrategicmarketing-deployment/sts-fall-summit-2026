@@ -292,7 +292,7 @@
     "spend": 5773.39,
     "clicks": 15071,
     "impressions": 595061,
-    "leads": 4128,
+    "leads": 4127,
     "purchases": 122,
     "revenue": 3391.5
   },
@@ -373,7 +373,7 @@
     "spend": 7627.51,
     "clicks": 15540,
     "impressions": 798311,
-    "leads": 4388,
+    "leads": 4387,
     "purchases": 127,
     "revenue": 4096.0
   },
@@ -436,7 +436,7 @@
     "spend": 8427.09,
     "clicks": 15415,
     "impressions": 780625,
-    "leads": 4078,
+    "leads": 4076,
     "purchases": 214,
     "revenue": 4953.0
   },
@@ -509,7 +509,7 @@
     "clicks": 0,
     "impressions": 0,
     "leads": 0,
-    "purchases": 134,
-    "revenue": 17849.09
+    "purchases": 143,
+    "revenue": 18726.59
   }
 ]
