@@ -270,7 +270,9 @@ def _graph_ad_rows(since, until):
             "level": "ad",
             "time_range": json.dumps({"since": since, "until": until}),
             "fields": "ad_id,spend,inline_link_clicks,impressions",
-            "limit": PAGE_LIMIT,
+            # ~2,700 ads over a 60-day window: 500-row pages tripped Meta's code 2 /
+            # 1504044 "Service temporarily unavailable" (runs 10:00 and 12:00 UTC 2026-10-19)
+            "limit": 100,
         }
         path, guard = f"act_{acct}/insights", 0
         while True:
@@ -280,7 +282,7 @@ def _graph_ad_rows(since, until):
             rows += d.get("data") or []
             after = ((d.get("paging") or {}).get("cursors") or {}).get("after")
             guard += 1
-            if not (d.get("paging") or {}).get("next") or not after or guard > 40:
+            if not (d.get("paging") or {}).get("next") or not after or guard > 120:
                 break
             params["after"] = after
     return rows
