@@ -157,7 +157,7 @@
     "spend": 107.09,
     "clicks": 358,
     "impressions": 12244,
-    "leads": 128,
+    "leads": 127,
     "purchases": 4,
     "revenue": 85.0
   },
@@ -247,7 +247,7 @@
     "spend": 6958.34,
     "clicks": 17287,
     "impressions": 540344,
-    "leads": 5559,
+    "leads": 5558,
     "purchases": 174,
     "revenue": 4651.98
   },
@@ -554,7 +554,7 @@
     "clicks": 0,
     "impressions": 0,
     "leads": 0,
-    "purchases": 32,
+    "purchases": 33,
     "revenue": 2788.0
   }
 ]
