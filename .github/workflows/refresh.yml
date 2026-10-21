@@ -224,7 +224,9 @@ jobs:
           else
             git commit -m "publish $(date -u +%Y-%m-%dT%H:%MZ)"
             git stash --include-untracked
-            git pull --rebase
+            # -X theirs: in a rebase that is the commit being replayed, this run's fresh
+            # build. Generated files only, so a racing publish must lose, not conflict.
+            git pull --rebase -X theirs
             git stash pop || true
             git push
             echo "published; Pages serves it from main within a minute or so"
