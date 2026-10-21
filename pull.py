@@ -111,8 +111,12 @@ def is_separate(campaign_name):
         return True
     slot = slot_for(campaign_name)
     return bool(slot) and SLOT_GROUP.get(slot) in SEPARATE
-# A different, earlier summit. Its campaigns must never be swept in.
-EXCLUDE = re.compile(r"Preservation", re.I)
+# Campaigns that must never be swept in, even when one of their leads carries the
+# summit tag: a different, earlier summit, and the always-on TOF blog post traffic
+# ("TOF | Blog Post Ads"), which Phil ruled off this board on 2026-10-21. One tagged
+# lead had pulled $3,736.51 of blog spend onto the page as summit spend. Its leads
+# leave the paid base and the page reports them, like any other excluded campaign.
+EXCLUDE = re.compile(r"Preservation|Blog Post", re.I)
 # Deliberately off the sheet. "Scaling 2 | ABO - Copy" was a duplicate that never left
 # review: Meta reports no delivery for it at all. Hidden rather than deleted, and
 # checked against Meta every run, so if it ever starts spending the pull says so
