@@ -180,12 +180,45 @@ def _rows(account_id, since, until):
 
 
 def _fetch_rows(account_id, since, until):
-    """Every ad-set-day row in the window, following Meta's paging."""
+    """Every ad-set-day row in the window: spend and impressions, plus link clicks.
+
+    Link clicks are fetched in their OWN request and merged by (ad set, day). From
+    about 05:27 UTC on 2026-10-21, asking the TSA account for spend and
+    inline_link_clicks together with time_increment=1 made Meta return the clicks but
+    "0" for spend and impressions on every row, with HTTP 200. The board lost the whole
+    TSA account ($144,520.77) and nothing errored. Asked separately, both are right to
+    the cent. STS was not affected, but both accounts go the same way so they cannot
+    drift apart.
+    """
+    base = _page(account_id, since, until,
+                 "adset_id,adset_name,campaign_name,spend,impressions")
+    clicks = _page(account_id, since, until, "adset_id,inline_link_clicks")
+    by_key = {(r.get("adset_id"), r.get("date_start")): r for r in base}
+    for c in clicks:
+        k = (c.get("adset_id"), c.get("date_start"))
+        if k in by_key:
+            by_key[k]["inline_link_clicks"] = c.get("inline_link_clicks") or 0
+        elif int(c.get("inline_link_clicks") or 0):
+            base.append({"adset_id": k[0], "date_start": k[1], "spend": 0, "impressions": 0,
+                         "inline_link_clicks": c.get("inline_link_clicks")})
+    # Never publish clicks with no money behind them again. Raising sends the run to
+    # Windsor (or the Hyros fallback), both of which the page labels, instead of a
+    # silent zero.
+    clicks_n = sum(int(r.get("inline_link_clicks") or 0) for r in base)
+    spend_n = sum(float(r.get("spend") or 0) for r in base)
+    if clicks_n > 100 and spend_n == 0:
+        raise RuntimeError(f"Meta returned {clicks_n} link clicks and $0 spend for "
+                           f"act_{account_id} {since}..{until}; refusing a zeroed pull")
+    return base
+
+
+def _page(account_id, since, until, fields):
+    """One insights query across the window at ad-set-day level, following paging."""
     params = {
         "level": "adset",
         "time_increment": 1,
         "time_range": json.dumps({"since": since, "until": until}),
-        "fields": "adset_id,adset_name,campaign_name,spend,inline_link_clicks,impressions",
+        "fields": fields,
         "limit": PAGE_LIMIT,
     }
     out, path, seen = [], f"act_{account_id}/insights", 0
